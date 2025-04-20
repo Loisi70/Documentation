@@ -1,0 +1,1100 @@
+---
+title: ""
+format:
+  html: 
+    code-fold: true
+execute:
+  eval: false
+
+---
+
+## SNOWFLAKE
+
+<https://docs.snowflake.com/en/sql-reference/info-schema.html>
+
+What is INFORMATION_SCHEMA?
+
+Each database created in your account automatically includes a built-in, read-only schema named INFORMATION_SCHEMA. The schema contains the following objects:
+
+Views for all the objects contained in the database, as well as views for account-level objects (i.e. non-database objects such as roles, warehouses, and databases)
+
+Table functions for historical and usage data across your account.
+
+select table_name, comment from testdb.information_schema.tables where table_schema = 'PUBLIC' ...![](images/Snowflake/SF_securable-objects-hierarchy.png)
+
+![](images/Snowflake/SF_Universe.png)
+
+### Snowflake Connector
+
+<https://github.com/snowflakedb/snowflake-connector-python>
+
+### Connect to Snowflake
+
+<https://docs.snowflake.com/en/user-guide/python-connector.html>
+
+### Tutorial Zero to Snowflake
+
+<https://www.youtube.com/watch?v=xCCkHZf1-aI>
+
+<https://quickstarts.snowflake.com/guide/getting_started_with_snowflake/index.html#4>
+
+```{sql connection=}
+Use database Citibike;
+
+Use schema public;
+
+create or replace table trips
+(tripduration integer,
+starttime timestamp,
+stoptime timestamp,
+start_station_id integer,
+start_station_name string,
+start_station_latitude float,
+start_station_longitude float,
+end_station_id integer,
+end_station_name string,
+end_station_latitude float,
+end_station_longitude float,
+bikeid integer,
+membership_type string,
+usertype string,
+birth_year integer,
+gender integer);
+
+--Create stage
+Create stage citibike_trips
+    url = s3://snowflake-workshop-lab/citibike-trips-csv/
+    ;
+
+--List content of staged data
+List @citibike_trips;
+
+--Create file format
+Create or replace file format csv type='csv'
+  compression = 'auto' field_delimiter = ',' record_delimiter = '\n'
+  skip_header = 0 field_optionally_enclosed_by = '\042' trim_space = false
+  error_on_column_count_mismatch = false escape = 'none' escape_unenclosed_field = '\134'
+  date_format = 'auto' timestamp_format = 'auto' null_if = ('') comment = 'file format for ingesting data for zero to snowflake';
+  
+--verify file format is created
+show file formats in database citibike;
+
+--load the data
+copy into trips from @citibike_trips file_format=csv PATTERN = '.*csv.*' ;
+
+--Check how the performance is with a bigger warehouse
+truncate table trips;
+--change warehouse size from small to large (4x)
+alter warehouse compute_wh set warehouse_size='large';
+show warehouses;
+
+--load data with large warehouse
+copy into trips from @citibike_trips file_format=csv PATTERN = '.*csv.*' ;
+
+--reset compute_wh to x-small
+--change warehouse size from large (4x) to small
+alter warehouse compute_wh set warehouse_size='x-small';
+show warehouses;
+
+
+--Run some queries
+select * from trips limit 20;
+
+--basic hourly statistics on Citi Bike usage
+select date_trunc('hour', starttime) as "date",
+count(*) as "num trips",
+avg(tripduration)/60 as "avg duration (mins)",
+avg(haversine(start_station_latitude, start_station_longitude, end_station_latitude, end_station_longitude)) as "avg distance (km)"
+from trips
+group by 1 order by 1;
+
+
+/*
+Use the Result Cache
+Snowflake has a result cache that holds the results of every query executed in the past 24 hours. These are available across warehouses, so query results returned to one user are available to any other user on the system who executes the same query, provided the underlying data has not changed. Not only do these repeated queries return extremely fast, but they also use no compute credits.
+*/
+select date_trunc('hour', starttime) as "date",
+count(*) as "num trips",
+avg(tripduration)/60 as "avg duration (mins)",
+avg(haversine(start_station_latitude, start_station_longitude, end_station_latitude, end_station_longitude)) as "avg distance (km)"
+from trips
+group by 1 order by 1;
+
+
+--Execute Another Query
+--Next, let's run the following query to see which months are the busiest:
+select
+monthname(starttime) as "month",
+count(*) as "num trips"
+from trips
+group by 1 order by 2 desc;
+
+/*
+Clone a Table
+Snowflake allows you to create clones, also known as "zero-copy clones" of tables, schemas, and databases in seconds. When a clone is created, Snowflake takes a snapshot of data present in the source object and makes it available to the cloned object. The cloned object is writable and independent of the clone source. Therefore, changes made to either the source object or the clone object are not included in the other.
+
+A popular use case for zero-copy cloning is to clone a production environment for use by Development & Testing teams to test and experiment without adversely impacting the production environment and eliminating the need to set up and manage two separate environments.
+
+Zero-Copy Cloning A massive benefit of zero-copy cloning is that the underlying data is not copied. Only the metadata and pointers to the underlying data change. Hence, clones are "zero-copy" and storage requirements are not doubled when the data is cloned. Most data warehouses cannot do this, but for Snowflake it is easy!
+*/
+create table trips_dev clone trips;
+
+
+/*
+*************************************************
+Working with Semi-Structured Data, Views, & Joins
+*************************************************
+*/
+
+create database weather;
+use role sysadmin;
+use warehouse compute_wh;
+use database weather;
+use schema public;
+
+
+--Next, let's create a table named JSON_WEATHER_DATA to use for loading the JSON data. In the worksheet, execute the following 
+--CREATE TABLE command:
+
+create table json_weather_data (v variant);
+
+--Create Another External Stage
+create stage nyc_weather
+url = 's3://snowflake-workshop-lab/zero-weather-nyc';
+list @nyc_weather;
+
+--Load and Verify the Semi-structured Data
+copy into json_weather_data
+from @nyc_weather 
+    file_format = (type = json strip_outer_array = true);
+
+select * from json_weather_data limit 10;
+
+// create a view that will put structure onto the semi-structured data
+create or replace view json_weather_data_view as
+select
+    v:obsTime::timestamp as observation_time,
+    v:station::string as station_id,
+    v:name::string as city_name,
+    v:country::string as country,
+    v:latitude::float as city_lat,
+    v:longitude::float as city_lon,
+    v:weatherCondition::string as weather_conditions,
+    v:coco::int as weather_conditions_code,
+    v:temp::float as temp,
+    v:prcp::float as rain,
+    v:tsun::float as tsun,
+    v:wdir::float as wind_dir,
+    v:wspd::float as wind_speed,
+    v:dwpt::float as dew_point,
+    v:rhum::float as relative_humidity,
+    v:pres::float as pressure
+from
+    json_weather_data
+where
+    station_id = '72502';
+    
+    
+--Verify the view with the following query:
+select * from json_weather_data_view
+where date_trunc('month',observation_time) = '2018-01-01'
+limit 20;
+
+--Use a Join Operation to Correlate Against Data Sets
+select weather_conditions as conditions
+,count(*) as num_trips
+from citibike.public.trips
+left outer join json_weather_data_view
+on date_trunc('hour', observation_time) = date_trunc('hour', starttime)
+where conditions is not null
+group by 1 order by 2 desc;
+
+/*
+*****************
+Using Time Travel
+*****************
+*/
+--Drop and Undrop a Table
+drop table json_weather_data;
+select * from json_weather_data limit 10;
+
+undrop table json_weather_data;
+select * from json_weather_data limit 10;
+
+--Roll Back a Table
+use role sysadmin;
+use warehouse compute_wh;
+use database citibike;
+use schema public;
+
+--Introduce an error
+update trips set start_station_name = 'oops';
+
+select
+start_station_name as "station",
+count(*) as "rides"
+from trips
+group by 1
+order by 2 desc
+limit 20;
+
+
+--Normally we would need to scramble and hope we have a backup lying around.
+--In Snowflake, we can simply run a command to find the query ID of the last UPDATE command and store it in a variable named ---$QUERY_ID.
+
+set query_id =
+(select query_id from table(information_schema.query_history_by_session (result_limit=>5))
+where query_text like 'update%' order by start_time desc limit 1);
+
+
+--Use Time Travel to recreate the table with the correct station names:
+
+create or replace table trips as
+(select * from trips before (statement => $query_id));
+
+
+--Run the previous query again to verify that the station names have been restored:
+select
+start_station_name as "station",
+count(*) as "rides"
+from trips
+group by 1
+order by 2 desc
+limit 20;
+
+
+
+/*
+**************************************************
+Working with Roles, Account Admin, & Account Usage
+**************************************************
+*/
+
+use role accountadmin;
+
+create role junior_dba;
+grant role junior_dba to user Alois;
+use role junior_dba;
+
+-- the newly created role does not have any rights, let us set them up
+use role accountadmin;
+grant usage on warehouse compute_wh to role junior_dba;
+grant usage on database citibike to role junior_dba;
+grant usage on database weather to role junior_dba;
+
+
+/*
+********************************************
+Sharing Data Securely & the Data Marketplace
+********************************************
+
+With secure data sharing:
+
+There is only one copy of the data that lives in the data provider's account.
+Shared data is always live, real-time, and immediately available to consumers.
+Providers can establish revocable, fine-grained access to shares.
+Data sharing is simple and safe, especially compared to older data sharing methods, which were often manual and insecure, such as transferring large .csv files across the internet.
+
+Cross-region & cross-cloud data sharing To share data across regions or cloud platforms, you must set up replication. 
+
+Snowflake uses secure data sharing to provide account usage data and sample data sets to all Snowflake accounts. In this capacity, Snowflake acts as the data provider of the data and all other accounts.
+
+Secure data sharing also powers the Snowflake Data Marketplace, which is available to all Snowflake customers and allows you to discover and access third-party datasets from numerous data providers and SaaS vendors. Again, in this data sharing model, the data doesn't leave the provider's account and you can use the datasets without any transformation.
+
+View Existing Shares
+
+In the home page, navigate to Data > Databases. In the list of databases, look at the SOURCE column. You should see two databases with Local in the column. These are the two databases we created previously in the lab. The other database, SNOWFLAKE, shows Share in the column, indicating it's shared from a provider.
+
+Create an Outbound Share
+
+Let's go back to the Citi Bike story and assume we are the Account Administrator for Snowflake at Citi Bike. We have a trusted partner who wants to analyze the data in our TRIPS database on a near real-time basis. This partner also has their own Snowflake account in the same region as our account. So let's use secure data sharing to allow them to access this information.
+
+Navigate to Data > Private Sharing, then at the top of the tab click Shared by My Account. Click the Share button in the top right corner and select Create a Direct Share:
+
+shares outbound button
+
+Click + Select Data and navigate to the CITIBIKE database and PUBLIC schema. Select the 2 tables we created in the schema and click the Done button:
+
+share fields
+
+The default name of the share is a generic name with a random numeric value appended. Edit the default name to a more descriptive value that will help identify the share in the future (e.g. ZERO_TO_SNOWFLAKE_SHARED_DATA. You can also add a comment.
+
+In a real-world scenario, the Citi Bike Account Administrator would next add one or more consumer accounts to the share, but we'll stop here for the purposes of this lab.
+
+Click the Create Share button at the bottom of the dialog:
+
+success message
+
+The dialog closes and the page shows the secure share you created:
+
+TRIPS_SHARE share
+
+You can add consumers, add/change the description, and edit the objects in the share at any time. In the page, click the < button next to the share name to return to the Share with Other Accounts page:
+
+TRIPS_SHARE share
+
+We've demonstrated how it only takes seconds to give other accounts access to data in your Snowflake account in a secure manner with no copying or transferring of data required!
+
+Snowflake provides several ways to securely share data without compromising confidentiality. In addition to tables, you can share secure views, secure UDFs (user-defined functions), and other secure objects. For more details about using these methods to share data while preventing access to sensitive information, see the Snowflake documentation.
+
+Snowflake Data Marketplace
+Make sure you're using the ACCOUNTADMIN role and, navigate to the Marketplace:
+
+data marketplace tab
+
+Find a listing
+The search box at the top allows you to search for a listings. The drop-down lists to the right of the search box let you filter data listings by Provider, Business Needs, and Category.
+
+Type COVID in the search box, scroll through the results, and select COVID-19 Epidemiological Data (provided by Starschema).
+
+
+
+In the COVID-19 Epidemiological Data page, you can learn more about the dataset and see some usage example queries. When you're ready, click the Get button to make this information available within your Snowflake account:
+
+
+
+Review the information in the dialog and lick Get again:
+
+
+
+You can now click Done or choose to run the sample queries provided by Starschema:
+
+*/
+
+
+/*
+********************************************
+Resetting Snowflake Environment
+********************************************
+*/
+use role accountadmin;
+drop share if exists zero_to_snowflake_shared_data;
+drop database if exists citibike;
+drop database if exists weather;
+drop warehouse if exists analytics_wh;
+drop role if exists junior_dba;
+
+
+/*
+********************************************
+Privileges Granted to a Role / User
+********************************************
+https://www.phdata.io/blog/viewing-privileges-granted-to-role-snowflake/
+
+Priviliges
+https://docs.snowflake.com/en/user-guide/security-access-control-privileges.html#all-privileges-alphabetical
+
+Snowflake has a powerful access control system that allows for role inheritance. Roles can be granted to other roles, inheriting their privileges.
+
+*/
+SHOW GRANTS TO ROLE administrator;
+SHOW GRANTS TO USER Alois;
+
+/*
+********************************************
+Snowpark
+********************************************
+https://www.phdata.io/blog/what-is-snowpark/
+
+Snowpark is a new developer experience for Snowflake that allows developers to write code in their 
+preferred language and run that code directly on Snowflake. It exposes new interfaces for development 
+in Python, Scala, or Java to supplement Snowflake’s original SQL interface. SQL is of course the 
+
+lingua franca 
+
+for data. 
+
+As a declarative language, SQL is very powerful in allowing users from all backgrounds to 
+ask questions about data. 
+*/
+
+/*
+********************************************
+How to Use UDFs in Snowpark for Python
+********************************************
+https://www.phdata.io/blog/how-to-use-udfs-in-snowpark-python/
+
+Snowpark enables developers to deploy machine learning in a serverless manner to the Snowflake 
+Data Cloud’s virtual warehouse compute engine. 
+
+Snowpark that allows developers to create Python functions with their favorite packages 
+and apply them to rows or batches of rows.
+
+These functions take on three forms for different use cases and can be used and defined locally, 
+or registered and saved for ongoing usage. The three forms are:
+
+User Defined Functions          --> Scalar
+User Defined Table Functions    --> Table
+Vectorized (Pandas) User Defined Functions
+
+For Snowpark to successfully compile them, they must make usage of libraries available 
+in Snowpark’s Conda repository. 
+*/
+
+from snowflake.snowpark.functions import udf, col
+from snowflake.snowpark.types import IntegerType
+
+@udf(name='a_plus_b'
+        , input_types=[IntegerType()
+        , IntegerType()]
+        , return_type=IntegerType()
+        , is_permanent=False
+        , replace=True
+    )
+
+def a_plus_b(a: int, b: int) -> int:
+
+    return a+b
+
+df.withColumn('A_PLUS_B', a_plus_b(col('A'), col('B')))
+
+/*
+Looking at the @UDF decorator, we can see that we need to declare a few things:
+
+name=’a_plus_b’;                            the name the function will be registered as in Snowflake 
+                                            (matches the function definition)
+
+input_types=[IntegerType(), IntegerType()]; this defines the Snowpark type of the columns containing 
+                                            containing our values
+
+return_type=IntegerType();                  defines the output type of the output column
+
+is_permanent=False;                         Set to false, this UDF won’t be kept outside of 
+                                            this session
+
+replace=True;                               if a UDF has already been registered with the same name, 
+                                            replace it, generally useful when you’re working locally, 
+                                            but be careful not to replace an important business 
+                                            function accidentally!
+
+*/
+
+/*
+********************************************
+User Defined Table Functions
+********************************************
+
+In the UDF example, we showed how to produce a new column of data calculated row-by-row with a UDF. 
+User Defined Table Functions (UDTFs) have two differences: 
+
+Most importantly, UDTFs return a table and might be applied with a lateral join of the returned table 
+to the original table. In addition, UDTFs can be processed with user defined partitions in 
+a partition-aware fashion. 
+*/
+
+from snowflake.snowpark.functions import udtf, col
+from typing import Iterable, Tuple
+from snowflake.snowpark.types import IntegerType
+
+@udtf(name='totals'
+            , input_types=[IntegerType()
+            , IntegerType()]
+            , output_schema=["total"]
+            , is_permanent=False
+            , replace=True
+     )
+
+class totals:
+    def __init__(self):
+        self.group_total = 0
+
+    def process(self, value1: int, value2: int) -> Iterable[Tuple[int]]:
+        self.group_total += (value1 + value2)
+        yield (value1 + value2,)
+
+    def end_partition(self):
+        yield (self.group_total,)
+
+df.join_table_function(totals("VALUE1", "VALUE2").over(partition_by=col('CATEGORY'))).show()
+
+/*
+Looking at the @UDTF decorator, one notable change:
+
+output_schema=[“total”]; here state that there will be one column in the output table, 
+with a column named “total”
+*/
+
+/*
+********************************************
+Vectorized (Pandas) User Defined Functions
+********************************************
+In the previous examples, the functions are applied row-by-row. They can be partition-aware 
+(in the case of UDTFs) or they can be partition agnostic and simply run for each row. 
+Snowpark provides a third option, vectorized UDFs, where computations can be performed over an 
+entire partition at once. 
+
+pandas_udf is an alias UDF, strictly for taking a vector per partition as a Pandas Dataframe or 
+Series and returning a Pandas Series. We can take the following table and returns the multiplication 
+of the two columns:
+*/
+
+import pandas as pd
+from snowflake.snowpark.functions import pandas_udf
+from snowflake.snowpark.types import IntegerType, PandasSeriesType
+
+@pandas_udf(name='multiplier'
+    , input_types=[PandasSeriesType(IntegerType())
+    , PandasSeriesType(IntegerType())]
+    , return_type=PandasSeriesType(IntegerType())
+    , is_permanent=False
+    , replace=True)
+
+def multiplier(column1: pd.Series, column2: pd.Series) -> pd.Series:
+    return column1 * column2
+
+df.withColumn('MULTIPLIED', multiplier(col('A'), col('B'))).show()
+
+
+/*
+The arguments for a pandas_udf are identical to a UDF, but the input and return types 
+must be some sort of vector. Remember that the partitioning is done in Snowpark, 
+and the size is determined by the planner.
+
+You can specify a max_batch_size which limits how big a partition can get in rows, 
+but not set the actual size a batch will be.
+
+
+********************************************
+How to Create an Analytics Strategy
+https://www.phdata.io/blog/how-to-create-an-analytics-strategy/
+********************************************
+
+A comprehensive analytics strategy should not only determine how data is going to be analyzed, 
+but should also address where your organization is today, where it wants to go, 
+and how it is going to get there. 
+
+It should articulate the long-term decisions needed around how data is going to be:
+
+- used
+- governed
+- consumed 
+
+to satisfy organizational goals and missions. 
+
+Data is often scattered in silos, trapped in legacy systems that don’t talk well with newer ones 
+or data quality is fragmented through manual user processes. 
+
+For all of the complexities that come along with developing a data-driven culture, 
+it’s imperative that you have a foundational understanding of what is needed to create an 
+analytics strategy. 
+
+
+
+```
+
+### Connector Parameters
+
+```{python}
+
+#pip install "snowflake-connector-python[secure-local-storage,pandas]"    
+#import the snowflake connector
+import snowflake.connector
+
+#define parameter style before defining / opening the connection
+#Option 1 'qmark'
+#snowflake.connector.paramstyle = 'qmark'
+
+#Option 2 'numeric'
+snowflake.connector.paramstyle = 'numeric'
+
+#open a database connection and create a cursor
+cnn = snowflake.connector.connect(
+    user = "Alois",
+    password = "emc73HS88!",
+    #authenticator = "externalbrowser",
+    account= "WEUZZWV-tb23878",
+    #Role =  ROLE (Optional)
+    warehouse =  "COMPUTE_WH" #(Optional)
+    )
+
+cs = cnn.cursor()
+
+try:
+    #Option 1 using qmark
+    #sql = '''    
+    #    SELECT * FROM Snowflake_sample_data.tpch_sf1.CUSTOMER
+    #     WHERE C_CUSTKEY = ? or C_CUSTKEY = ?  
+    #'''
+    #cs.execute(sql, ['60001','60005'])
+
+    #Optin 2 using numeric
+    sql = '''    
+        SELECT * FROM Snowflake_sample_data.tpch_sf1.CUSTOMER
+         WHERE C_CUSTKEY = :1 or C_CUSTKEY = :2  
+    '''
+    cs.execute(sql, ['60001','60005'])
+
+    #cs.execute_async() to run multiple queries in async mode, i.e. in parallel rather than in sequence
+
+    #convert the data to a pandas dataframe
+    df = cs.fetch_pandas_all()
+    print(df.head(5))
+
+except Exception as e:
+    print(e)
+
+finally:
+    if cs:
+        cs.close()
+        cnn.close()
+        print('connection closed..')
+
+print('done.')
+```
+
+### Test Connector
+
+```{python}
+
+#pip install "snowflake-connector-python[secure-local-storage,pandas]"    
+
+#import the snowflake connector
+import snowflake.connector
+import pandas as pd
+from tabulate import tabulate
+
+#open a database connection
+cnn = snowflake.connector.connect(
+    user = "Alois",
+    password = "emc73HS88!",
+    #authenticator = "externalbrowser",
+    account= "WEUZZWV-tb23878",
+    #Role =  ROLE (Optional)
+    warehouse =  "COMPUTE_WH" #(Optional)
+    )
+
+#create a cursor object
+cs = cnn.cursor()
+try:
+    cs.execute('Select current_version()')
+    row = cs.fetchone()
+    print(row[0])
+
+    sql_query = '''    
+        SELECT * FROM Snowflake_sample_data.tpch_sf1.CUSTOMER Limit 10    
+    '''
+    cs.execute(sql_query)
+
+    #cs.execute_async() to run multiple queries in async mode, i.e. in parallel rather than in sequence
+
+    #convert the data to a pandas dataframe
+    df = cs.fetch_pandas_all()
+
+    print(tabulate(df.tail(5), headers='keys', tablefmt='github'))
+
+except Exception as e:
+    print(e)
+
+finally:
+    if cs:
+        cs.close()
+        cnn.close()
+        print('connection closed..')
+
+print('done.')
+```
+
+### Test Snowpark
+
+```{python}
+
+from snowflake.snowpark import Session
+import pandas as pd
+from tabulate import tabulate
+
+print('connecting...')
+
+cnn_params = {
+        "account": "weuzzwv-tb23878",
+        "user": "Alois",
+        "password": "emc73HS88!",
+        "warehouse": "COMPUTE_WH",
+        "database": "Snowflake_sample_data",
+        "schema": "tpch_sf1"
+    }
+
+try:
+    print('session..')
+    sess = Session.builder.configs(cnn_params).create()
+
+    print('Test data...')
+    df = pd.DataFrame
+    df = sess.sql("Select * from CUSTOMER Limit 10;").collect()
+    print(tabulate(df, headers='keys', tablefmt='github'))
+    #print(sess.sql("Select * from CUSTOMER Limit 10;").collect())
+
+except Exception as e:
+    print(e)
+
+finally:
+    if sess:
+        sess.close()
+        print('connection closed..')
+
+print('done.')
+```
+
+### Snowpark UDF
+
+```{python}
+
+snowuser = 'MY_USERNAME'
+snowpass = 'MY_PASSWORD'
+snowacct = 'MY_ACCOUNT'
+from snowflake.snowpark import Session
+from snowflake.snowpark.functions import udf
+from snowflake.snowpark.types import StringType
+
+sess = None
+
+print('connecting..')
+cnn_params = {
+    "account": snowacct,
+    "user": snowuser,
+    "password": snowpass,
+    "warehouse": "project_warehouse",
+    "database": "project_database",
+    "schema": "project_schema"
+    }
+try:
+    print('session..')
+    sess = Session.builder.configs(cnn_params).create()
+    df_staff = sess.table("staff")
+    #df_staff.show()
+    full_name = udf(lambda last: last[3:] + '/' + last[:3],
+                    return_type = StringType(),
+                    input_types = [StringType()],
+                    name='name_code')
+    df_names = df_staff.select('LastName',
+                               'FirstName',
+                               full_name('LastName')).collect()
+    for row in df_names:
+        print(row)
+
+    @udf(name = 'altcode', replace = True, is_permanent = True)
+    def altcode(last: str) -> str:
+        acount = 0
+        for char in last:
+            if char == 'a':
+                acount += 1
+        return str(last) + '_' + str(acount)
+
+    df_alt = sess.sql("Select LastName, altcode('LastName') From project_staff;").collect()
+    for row in df_alt:
+        print(row)
+except Exception as e:
+    print(e)
+finally:
+    if sess:
+        sess.close()
+        print('connection closed..')
+print('done.')
+```
+
+**Snowpark Create Stored Procedure**
+
+```{python}
+
+snowuser = 'my_user'
+snowpass = 'my_pwd'
+snowacct = 'my_acct'
+
+from snowflake.snowpark import Session
+
+sess = None
+
+print('connecting..')
+cnn_params = {
+    "account": snowacct,
+    "user": snowuser,
+    "password": snowpass,
+    "warehouse": "project_warehouse",
+    "database": "project_database",
+    "schema": "project_schema"
+    }
+try:
+    sess = Session.builder.configs(cnn_params).create()
+    df_proj = sess.table('project')
+    df_name = df_proj.select('project_name').collect()
+    for row in df_name:
+        print(row)
+    print('create procedure..')
+    sql = ("Create or Replace Procedure create_temp(from_table STRING)\n"
+           "Returns STRING\n"
+           "Language PYTHON\n"
+           "Runtime_Version = '3.8'\n"
+           "Packages = ('snowflake-snowpark-python')\n"
+           "Handler = 'run'\n"
+           "As\n"
+           "$$\n"
+           "def run(session, from_table):\n"
+           "    to_table = str(from_table) + '_temp'\n"
+           "    session.table(from_table).write.save_as_table(to_table)\n"
+           "    return('Success.')\n"
+           "$$;")
+    result = sess.sql(sql)
+    result.show()
+    print('procedure created..')
+    sql_call = "CALL create_temp('project');"
+    result = sess.sql(sql_call)
+    result.show()
+    print('procedure called..')
+    df_new = sess.table('project_temp')
+    df_name_new = df_new.select('project_name').collect()
+    for row in df_name_new:
+        print(row)
+except Exception as e:
+    print(e)
+finally:
+    if sess:
+        sess.close()
+        print('connection closed..')
+print('done.')
+```
+
+### Snowpark Dataframe
+
+```{python}
+
+snowuser = 'MY_USERNAME'
+snowpass = 'MY_PASSWORD'
+snowacct = 'MY_ACCOUNT'
+
+from snowflake.snowpark import Session
+from snowflake.snowpark.functions import col
+
+sess = None
+print('connecting..')
+cnn_params = {
+    "account": snowacct,
+    "user": snowuser,
+    "password": snowpass,
+    "warehouse": "project_warehouse",
+    "database": "project_database",
+    "schema": "project_schema"
+    }
+try:
+    print('session..')
+    sess = Session.builder.configs(cnn_params).create()
+    df_project = sess.table("project")
+    df_project.show()
+    df_staff = sess.table("staff")
+    df_staff.show()
+    df_project_staff = sess.table("project_staff")
+    df_project_staff.show()
+    df_view = sess.table("vw_project_staff").filter(
+        (col("LASTNAME") == "Cooper") | (col("FIRSTNAME") == 'Wanda')).select(
+            col("PROJECT_NAME"), col("DATESTART"))
+    df_view.show()
+    df_pandas = df_view.to_pandas()
+    print(df_pandas.head(10))
+    df_view.write.mode("overwrite").save_as_table("cooper_projects")
+    df_cooper = sess.table("cooper_projects")
+    df_cooper.show()
+except Exception as e:
+    print(e)
+finally:
+    if sess:
+        sess.close()
+        print('connection closed..')
+print('done.'
+```
+
+**Migrate from SQL to Snowflake**
+
+```{python}
+
+import snowflake.connector
+from snowflake.connector.pandas_tools import write_pandas
+import pyodbc as pyo
+import pandas as pd
+
+print('opening sql server..')
+cnn_sql = (
+    r"Driver={SQL Server};Server=JUPITER\SQL2017;"
+    "Database=Demonstrations;UID=sql_user;PWD=sql_password;"
+    )
+cnn = pyo.connect(cnn_sql)
+print('opened..')
+
+sql = "Select Number_Values, Text_Values From Bulk_SQL;"
+df = pd.read_sql(sql, cnn)
+print(df.head(10))
+print(df.tail(10))
+cnn.close()
+print('sql server closed..')
+
+print('create snowflake table..')
+sql = (
+    "CREATE OR REPLACE Table one_million_example"
+    " (Number_Values integer, Text_Values string)"
+    )
+scnn = snowflake.connector.connect(
+    user='SFUSER',
+    password='ABC123',
+    account='ABCACCOUNT',
+    warehouse='project_warehouse',
+    database='project_database',
+    schema='project_schema'
+    )
+
+cs = scnn.cursor()
+cs.execute(sql)
+
+print('writing to snwoflake table..')
+success, nchunks, nrows, _ = write_pandas(scnn, df, 'one_million_example', quote_identifiers=False)
+
+print('snowflake closed..')
+print('get some data..')
+sql = "Select * From one_million_example Where Number_Values < 11"
+cs.execute(sql)
+df_result = cs.fetch_pandas_all()
+scnn.close()
+print(df_result)
+print('operation complete.')
+```
+
+### Create and populate Snowflake Database
+
+```{python}
+
+import snowflake.connector
+
+cnn = snowflake.connector.connect(
+    user = "Alois",
+    password = "emc73HS88!",
+    account= "WEUZZWV-tb23878",
+    )
+
+#create a cursor object
+cs = cnn.cursor()
+
+try:
+    cs.execute('Select current_version()')
+    row = cs.fetchone()
+    print(row[0])
+    print('Creating warehouse...')
+    cs.execute('CREATE WAREHOUSE IF NOT EXISTS project_warehouse')
+    print('Use database...')
+    cs.execute('USE DATABASE project_database')
+    print('Creating database...')
+    cs.execute('CREATE DATABASE IF NOT EXISTS project_database')
+    print('Creating schema...')
+    cs.execute('CREATE SCHEMA IF NOT EXISTS project_schema')
+    print('Creation completed...')
+
+    cs.execute('USE WAREHOUSE project_warehouse')
+    cs.execute('USE DATABASE project_database')
+    cs.execute('USE SCHEMA project_schema')
+
+    sql= """
+        CREATE OR REPLACE TABLE project_comments
+        (ID integer, Comments string);
+    """
+    cs.execute(sql)
+
+    print('Insert a few rows...')
+    sql = """
+        INSERT INTO project_comments (ID, Comments)
+        VALUES 
+            (1, 'Comment 1'),
+            (2, 'Comment 2'),
+            (3, 'Comment 3');
+    """
+    cs.execute(sql)
+
+    print('Read and fetch some rows...')
+    cs.execute('SELECT * FROM project_comments')
+    for row in cs.fetchall():
+        print(row)
+    print('Fetching rows completed!')
+
+except Exception as e:
+    print(e)
+
+finally:
+    cs.close
+    cnn.close()
+
+print('Done!')
+
+
+```
+
+Merge
+
+```{python}
+
+import snowflake.connector
+
+
+#open a database connection and create a cursor
+cnn = snowflake.connector.connect(
+    user = "Alois",
+    password = "emc73HS88!",
+    #authenticator = "externalbrowser",
+    account= "WEUZZWV-tb23878",
+    #Role =  ROLE (Optional)
+    warehouse =  "COMPUTE_WH"
+    )
+
+cs = cnn.cursor()
+
+try:
+    print('merging...')
+    sql = '''    
+        MERGE INTO Project USING Project_Update ON Project.ID = Project_Update.ID
+        WHEN MATCHED THEN UPDATE
+            SET Project.ProjectName = Project_Update.ProjectName,
+                Project.ProjectDescription = Project_Update.ProjectDescription
+        WHEN NOT MATCHED THEN INSERT (ID. Project_Name, Project_Description) 
+            VALUES( Project_Update.ID,
+                    Project_Update.Project_Name,
+                    Project_Update.Project_Description
+            )
+    '''
+
+    #
+    # merge into t1 using (select * from t2) t2 on t1.t1key = t2.t2key
+    # when matched and t2.marked = 1 then delete
+    # when matched and t2.isnewstatus = 1 then update set val = t2.newval, status = t2.newstatus
+    # when matched then update set val = t2.newval
+    # when not matched then insert (val, status) values (t2.newval, t2.newstatus);
+    #
+
+    #Variant deleting
+    sql2 = '''    
+        MERGE INTO Project 
+        USING Project_Update
+           ON Project.ID = Project_Update.ID
+        WHEN NOT MATCHED THEN DELETE
+            )
+    '''
+    cs.execute(sql)
+    cnn.commit()
+
+    #cs.execute_async() to run multiple queries in async mode, i.e. in parallel rather than in sequence
+
+    #convert the data to a pandas dataframe
+    df = cs.fetch_pandas_all()
+    print(df.head(5))
+
+except Exception as e:
+    print(e)
+
+finally:
+    if cs:
+        cs.close()
+        cnn.close()
+        print('connection closed..')
+
+print('done.')
+```
+
+### **Snowflake Streamlit**
+
+![](images/Snowflake/SF_Streamlit_01.png)
+
+![](images/Snowflake/SF_Streamlit_02.png)
+
+![](images/Snowflake/SF_Streamlit_03.png)

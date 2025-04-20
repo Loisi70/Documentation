@@ -1,0 +1,3082 @@
+---
+title: "Notes"
+format:
+  html: 
+    code-fold: true
+---
+
+## git
+
+```{shell}
+ls      # will not display .git as this is hidden
+ls -a   #will display .git
+git --version
+nano report.md  #ctrl + O and Ctrl + x to save
+pwd                   # print working directory
+echo  # When echoing something to a file, 
+      #  >> appends to the file and
+      #   > overwrites the file
+      #echo "49,M,No,Yes,Never,Yes,Yes,No" >> mental_health_survey.csv
+git add report.md     # will add the file to the staging are
+git add .             # will add all files and directory in the current location
+git commit -m "Text"  # will make a commit with a log message
+git status            # will show files in the staging area
+git diff report.md    # compare and unstaged file with the last committed version
+git diff -r HEAD filename # compare as staged file with the last commited version
+git diff -r HEAD      #compare all staged files with the last committed version
+git log               # will display all commits made, displayed 
+                      # in chronological order
+git show 36b761e4     # Using the 6-8 first characters of the hash it show 
+                      # the made changes
+git show HEAD~3       # will show the 4th last version
+
+git diff 34f4bd88 186398f # will show the changes between two commits
+git diff Head~3 Head~2    # will also show the changes between two commits
+git annotate report.md    # will show who made the changes and when
+
+:                     # indicates that there is more information that can be
+                      # accessed by hitting the space key
+                      
+git reset HEAD report.md # will unstage a file from staging area
+git reset HEAD           # will unstage all files from staging area
+
+git checkout -- report.md # will reset UNSTAGED report.md to the version of the                              # last commit
+git checkout .            # will reset UNSTAGED all files to the versions of the                             # last commit
+git checkout dc9d8fac report.md # will restore to this particular version
+git checkout Head~2 report.md   # will restore to this particular version
+
+git log -3                # will show last 3 logs
+git log -3 report.md      # will show last 3 logs for report.md
+git log --since='Apr 2 2022'  # will show log with changes since 2nd of April 2022
+git log --since='Apr 2 2022'  --until='Apr 11 2022' #will show changes in range
+
+git clean -n    # will list all untracked files
+gti clean -f    # will delete these untracked files (cannot be undone!!!)
+
+git config --list           # will show setting
+git config --list --local   # settings for one specific project
+git config --list --global  # settings for all of our projects
+git config --list --system  # settings for every users on this computer
+git config --global (setting value) # will allow changing the setting
+git config --global user.email alois.alig@gmx.ch
+git config --global user.name 'Alois Alig'  # --> '' needed because of space
+
+git config --global alias.st 'status' # creates an alias 'st' for the 'status'                                           # command --> 'git st' = 'git status'
+git config --global --list            # lists what is in the '.gitconfig' file, for                                       # example aliases
+
+nano .gitignore # list files to ignore whereas * acts as a wildecard
+
+
+# Branches
+git checkout -b report            # will create a branche called report
+git checkout report               # will switch to the report branch
+git branch                        # will list the branches
+git diff main summary-statistics  # The difference between branches
+git merge source destination      # will merge from source branch to destinantion
+                                  # git merge test main
+                                  
+git init repo1                    # will create a new repo in the current directory
+cd repo1                          # change directory
+git status                        # will show the status of the newly created repo
+
+
+git init                            # will turn the active directory into a repo
+                                    # do not created nested repos (repo in a repo)
+git clone (url)                     # clone a repo
+git clone /home/john/repo new_repo  # to clone locally
+git remote -v                       # shows the source verbose
+git remote add george https://github.com/george_datacamp/repo
+```
+
+![](images/git_repository.PNG)
+
+![](images/git_staging_committing.PNG)
+
+### git diff report.md
+
+![](images/git_diff.PNG)
+
+![](images/git_diff_recap.PNG)
+
+![](images/git_log.PNG)
+
+![](images/git_summary.PNG)
+
+![](images/git_undo_changes_to_unstaged_files.PNG)
+
+![](images/git_unstage_undo.PNG)
+
+## SQL Server
+
+You can get a list of SQL Server objects very easily using SELECT \* FROM sys.objects . This includes check, default, primary key and foreign key constraints.
+
+However, you can develop it very easily, by getting the Schema Name and the Parent Object Name - for example, what table a constraint is in? The code I develop in this video is:
+
+SELECT Schema_NAME(O.schema_id) as SchemaName, object_name(O.parent_object_id) as ParentObjectName, O.\*
+
+FROM sys.objects AS O
+
+Select \* from sys.schemas
+
+System.sql_modules and sys.syscomments system views can be used to dig into the definition of objects and search if any other object is used in the definition or not. Let's suppose if I am looking for comments in objects Creator Name=Aamir. I can use both system views to find out required information by using below queries.
+
+SELECT OBJECT_NAME(OBJECT_ID) AS ObjectName,
+
+definition AS ObjectDefinition
+
+FROM sys.sql_modules
+
+WHERE definition LIKE '%Creator Name=Aamir%'
+
+SELECT OBJECT_NAME(id) AS ObjectName,
+
+TEXT AS ObjectDefinition
+
+FROM sys.syscomments
+
+WHERE TEXT LIKE '%Creator Name=Aamir%'
+
+### How to List User Roles in SQL Server
+
+[Source:](https://www.netwrix.com/how_to_check_user_roles_in_sql_server.html)
+
+### Listing SQL Server roles for a user (in master database)
+
+```{sql connection=}
+select r.name as Role, m.name as Principal
+
+from
+
+    master.sys.server_role_members rm
+
+    inner join
+
+    master.sys.server_principals r on r.principal_id = rm.role_principal_id and r.type = 'R'
+
+    inner join
+
+    master.sys.server_principals m on m.principal_id = rm.member_principal_id
+
+where m.name = 'ENTERPRISE\J.Carter'
+```
+
+Querying database roles in SQL Server for a user (in specific database)
+
+```{sql connection=}
+SELECT r.name role_principal_name, m.name AS member_principal_name
+
+FROM sys.database_role_members rm 
+
+JOIN sys.database_principals r 
+
+    ON rm.role_principal_id = r.principal_id
+
+JOIN sys.database_principals m 
+
+    ON rm.member_principal_id = m.principal_id
+
+where m.name = 'ENTERPRISE\J.Carter'
+```
+
+[More advance scripts can be found here.](https://dba.stackexchange.com/questions/36618/list-all-permissions-for-a-given-role)
+
+sp_configure
+
+sp_configure 'external scripts enabled', 1 reconfigure
+
+Check that the service is running:
+
+# Python
+
+### Python Path
+
+py --list
+
+```{bash}
+C:\Users\Alois>py --list
+Installed Pythons found by py Launcher for Windows
+ -3.10-64 *
+ -3.8-64
+
+```
+
+#### Set environment variables:
+
+```{bash}
+C:\\Users\\Alois\\AppData\\Local\\Programs\\Python\\Python310\\Scripts\\\
+C:\\Users\\Alois\\AppData\\Local\\Programs\\Python\\Python310\\
+
+```
+
+### Python Basics
+
+```{shell}
+# virtual environment 
+> python -m venv venv 
+> .\venv\Scripts\activate 
+(venv) PS> 
+```
+
+```{shell}
+# show thi installed packages: 
+python -m pip list
+```
+
+In Python, the `-m` flag is used to run a module as a script. When you use `python -m`, you are telling the Python interpreter to run the specified module as the main program. This is often used when you want to execute a Python module directly from the command line.
+
+In summary, the `-m` flag allows you to run a Python module as a standalone script from the command line.
+
+#### Packages with *\_\_init\_\_.py*
+
+The application will exist in a *package*. In Python, a subdirectory that includes a *\_\_init\_\_.py* file is considered a package, and can be imported. When you import a package, the *\_\_init\_\_.py* executes and defines what symbols the package exposes to the outside world.
+
+### Python / R cheat sheet
+
+[images/Python_R_CheatSheet.pdf](images/Python_R_CheatSheet.pdf)
+
+### Poetry
+
+Poetry requires **Python 3.8+.** Poetry is a tool for **dependency management** and **packaging** in Python. It allows you to declare the libraries your project depends on and it will manage (install/update) them for you. Poetry offers a lockfile to ensure repeatable installs, and can build your project for distribution.
+
+For latest documentation see here: <https://python-poetry.org/>
+
+#### **Poetry Create .toml And Lock File**
+
+By initializing a new Poetry project, this will generate a file `pyproject.toml` interactively. The file will have all your package dependencies. If you are familiar with `pip` package manager then this is similar to that `requirements.txt` file.
+
+#### Scenario 1: Initialising a pre-existing project
+
+Create our new project, let's call it `poetry-demo`. This will create a new folder with the below structure:
+
+```{shell}
+poetry new poetry-demo
+```
+
+```{shell}
+poetry-demo
+├── poetry_demo
+│   └── __init__.py
+└── .venv
+    └── Lib
+    └── Scripts  
+    └── .gitignore
+    └── pyvenv.cfg 
+└── tests
+    └── __init__.py
+├── pyproject.toml
+├── README.md
+
+```
+
+The `pyproject.toml` file is what is the most important here. This will orchestrate your project and its dependencies. For now, it looks like this:
+
+```{shell}
+[tool.poetry]
+name = "poetry-demo"
+version = "0.1.0"
+description = ""
+authors = ["Alois Alig <alois.alig@gmx.ch>"]
+readme = "README.md"
+packages = [{include = "poetry_demo"}]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+```
+
+#### Scenario 2 Initialising a pre-existing project
+
+Instead of creating a new project, Poetry can be used to 'initialise' a pre-populated directory. To interactively create a **`pyproject.toml`** file in directory **`pre-existing-project`**
+
+`{shell} cd pre-existing-project poetry init}`
+
+When Poetry has finished installing, it writes all of the packages and the exact versions of them that it downloaded to the `poetry.lock` file, locking the project to those specific versions. This lock file should also be included in your project repo so that everyone working on the project is locked to the same versions of the dependencies.
+
+```{shell}
+poetry lock
+```
+
+#### **Manage Package Dependencies**
+
+Add package
+
+```{shell}
+poetry add Flask
+```
+
+Update all poetry packages that are defined in `pyproject.toml`.
+
+```{shell}
+poetry update
+```
+
+Alternatively, you can update individual packages by specifying the name.
+
+```{shell}
+poetry update Flask
+```
+
+Show the list of all packages installed with description.
+
+```{shell}
+poetry show
+```
+
+Show information about a specific package.
+
+```{shell}
+poetry show Flask
+```
+
+#### Using your virtual environment
+
+By default, Poetry creates a virtual environment in **`{cache-dir}/virtualenvs`** (usually in C:\\users\\aligalo\\AppData\\local\\pypoetry\\cash). You can change the [**`cache-dir`**](https://python-poetry.org/docs/configuration/#cache-dir "cache-dir configuration documentation") value by editing the Poetry configuration. Additionally, you can use the [**`virtualenvs.in-project`**](https://python-poetry.org/docs/configuration/#virtualenvsin-project) configuration variable to create virtual environments within your project directory:
+
+```{shell}
+poetry config virtualenvs.in-project true
+```
+
+There are several ways to run commands within this virtual environment.
+
+#### Using `poetry run`
+
+To run your script simply use **`poetry run python your_script.py`**. Likewise if you have command line tools such as **`pytest`** or **`black`** you can run them using **`poetry run pytest`**.
+
+#### Activating the virtual environment
+
+The easiest way to activate the virtual environment is to create a nested shell with **`poetry shell`**.
+
+To deactivate the virtual environment and exit this new shell type **`exit`**. To deactivate the virtual environment without leaving the shell use **`deactivate`**.
+
+**Why a nested shell?**
+
+Child processes inherit their environment from their parents, but do not share them. As such, any modifications made by a child process is not persisted after the child process exits. A Python application (Poetry), being a child process, cannot modify the environment of the shell that it has been called from such that an activated virtual environment remains active after the Poetry command has completed execution.
+
+Therefore, Poetry has to create a sub-shell with the virtual environment activated in order for the subsequent commands to run from within the virtual environment.
+
+If you'd like to prevent **`poetry shell`** from modifying your shell prompt on virtual environment activation, you should set **`VIRTUAL_ENV_DISABLE_PROMPT=1`** as an environment variable before running the command.
+
+Alternatively, to avoid creating a new shell, you can manually activate the virtual environment by running **`source {path_to_venv}/bin/activate`** (**`{path_to_venv}\Scripts\activate.ps1`** in PowerShell). To get the path to your virtual environment run **`poetry env info --path`**. You can also combine these into a one-liner, such as **`source $(poetry env info --path)/bin/activate`** (**`& ((poetry env info --path) + "\Scripts\activate.ps1")`** in Powershell).
+
+To deactivate this virtual environment simply use **`deactivate`**.
+
+|                   | **POSIX SHELL**                                     | **WINDOWS (POWERSHELL)**                                     | **EXIT/DEACTIVATE** |
+|:------------------|:----------------------------------------------------|:-------------------------------------------------------------|:--------------------|
+| Sub-shell         | **`poetry shell`**                                  | **`poetry shell`**                                           | **`exit`**          |
+| Manual Activation | **`source {path_to_venv}/bin/activate`**            | **`{path_to_venv}\Scripts\activate.ps1`**                    | **`deactivate`**    |
+| One-liner         | **`source $(poetry env info --path)/bin/activate`** | **`& ((poetry env info --path) + "\Scripts\activate.ps1")`** | **`deactivate`**    |
+
+#### Poetry Config
+
+```{shell}
+poetry config --list
+cache-dir = "C:\\Users\\Alois\\AppData\\Local\\pypoetry\\Cache"
+```
+
+```{shell}
+experimental.system-git-client = false
+installer.max-workers = null
+installer.modern-installation = true
+installer.no-binary = null
+installer.parallel = true
+virtualenvs.create = true
+virtualenvs.in-project = null
+virtualenvs.options.always-copy = false
+virtualenvs.options.no-pip = false
+virtualenvs.options.no-setuptools = false
+virtualenvs.options.system-site-packages = false
+virtualenvs.path = "{cache-dir}\\virtualenvs"  # C:\Users\Alois\AppData\Local\pypoetry\Cache\virtualenvs
+virtualenvs.prefer-active-python = false
+virtualenvs.prompt = "{project_name}-py{python_version}"
+warnings.export = true
+```
+
+#### Usage
+
+To change the configuration, navigate to the project directory and apply the change as follows:
+
+```{shell}
+cd /path/to/your/project
+poetry config virtualenvs.in-project true
+poetry config --list
+```
+
+```{shell}
+experimental.system-git-client = false
+installer.max-workers = null
+installer.modern-installation = true
+installer.no-binary = null
+installer.parallel = true
+virtualenvs.create = true
+virtualenvs.in-project = true
+virtualenvs.options.always-copy = false
+virtualenvs.options.no-pip = false
+virtualenvs.options.no-setuptools = false
+virtualenvs.options.system-site-packages = false
+virtualenvs.path = "{cache-dir}\\virtualenvs"  # C:\Users\Alois\AppData\Local\pypoetry\Cache\virtualenvs
+virtualenvs.prefer-active-python = false
+virtualenvs.prompt = "{project_name}-py{python_version}"
+warnings.export = true
+```
+
+#### **Poetry Add, Remove, List & Source Virtual Environment**
+
+For Poetry to identify that the folder is indeed a Poetry project, it has to have a `pyproject.toml` file.
+
+Create a new virtual environment in the current project.
+
+```{shell}
+poetry env use $(which python3)
+```
+
+Find the list of virtual environments including its full path.
+
+```{shell}
+poetry env list --full-path
+```
+
+Remove a virtual environment. The last part of the command is the name of the virtual environment.
+
+```{shell}
+poetry env remove project-edtXRBsn-py3.7
+```
+
+Get the path to the current active Python interpreter.
+
+```{shell}
+poetry run which python3
+```
+
+#### **Poetry Creating A Package & Versioning**
+
+Create a package in wheel format.
+
+```{shell}
+poetry build --format wheel
+```
+
+Update the alpha version of the next release number.
+
+```{shell}
+poetry version prerelease
+```
+
+Update the patch version of the next release number. Check out more [version examples](https://python-poetry.org/docs/cli/#version).
+
+```{shell}
+poetry version patch
+```
+
+#### **Poetry Nested Project**
+
+Installing all dependencies, but not the project itself. Use the `--no-root` flag when installing packages inside each application.
+
+```{shell}
+poetry install --no-root
+```
+
+#### **Install Poetry Dependencies For A Release**
+
+Once you are ready to package and release your application, Poetry has a way to install all dependencies excluding the ones for Development.
+
+```{shell}
+poetry install --no-dev
+```
+
+In automated deployment you will need to disable any interactive questions that could keep the installation into a pause.
+
+```{shell}
+poetry install -n
+```
+
+### Pandas
+
+#### Tips and Tricks
+
+#### df.describe(), df.shape, df.dtypes - Describe the dataframe
+
+```{python}
+import pandas as pd
+
+pd.set_option('display.max_columns', None)   # to show all columns
+#pd.set_option('display.max_columns', 3)     # to show 3 columns only
+#pd.set_option(“max_colwidth”, None)      # consider parquet files for performance
+#pd.set_option(‘display.precision’, 1)  #sets the precision of numbers
+
+df = pd.read_csv("data/titanic.csv") 
+
+
+print("Describe normal rounded to 2 decimals")
+df.describe().round(decimals=2)
+```
+
+```{python}
+
+print("Describe transpose no rounding applied")
+df.describe().T #for transpose for readability
+```
+
+```{python}
+df.shape
+```
+
+```{python}
+df.dtypes
+```
+
+#### df.apply() - Add a colum by logic defined in a separate function:
+
+<https://towardsdatascience.com/pandas-and-python-tips-and-tricks-for-data-science-and-data-analysis-1b1e05b7d93a>
+
+✅ 𝙖𝙥𝙥𝙡𝙮 and 𝙡𝙖𝙢𝙗𝙙𝙖 can help you easily apply whatever logic to your columns using the following fromat:
+
+𝙙𝙛\[𝙣𝙚𝙬_𝙘𝙤𝙡\] = 𝙙𝙛.𝙖𝙥𝙥𝙡𝙮(𝙡𝙖𝙢𝙗𝙙𝙖 𝙧𝙤𝙬: 𝙛𝙪𝙣𝙘(𝙧𝙤𝙬), 𝙖𝙭𝙞𝙨=1)
+
+#### df.cut(), df.qcut() - Convert categorical data into numerical ones\*\*
+
+1️⃣ .𝙘𝙪𝙩() to specifically define your bin edges.
+
+```{python}
+seniority = ['Child', 'Worker',]
+seniority_bins = [0, 18, 60]
+df['Seniority'] = pd.cut(df['Age'],
+                          bins=seniority_bins, 
+                          labels=seniority, 
+                          include_lowest=True)
+
+print(df[['Age', 'Seniority']])
+```
+
+```{python}
+Classification= ["child", "teenager", "Adult", "Retired"]
+df["Classification"] = pd.qcut(
+                                df["Age"],
+                                q = 4, 
+                                labels=Classification
+                              )
+
+print(df[['Age', 'Seniority','Classification']])
+```
+
+𝙆𝙚𝙚𝙥 𝙞𝙣 𝙢𝙞𝙣𝙙 💡
+
+-   When using .𝙘𝙪𝙩(): a number of bins = number of labels + 1.
+
+-   When using .𝙦𝙘𝙪𝙩(): a number of bins = number of labels.
+
+-   With .𝙘𝙪𝙩(): set 𝙞𝙣𝙘𝙡𝙪𝙙𝙚_𝙡𝙤𝙬𝙚𝙨𝙩=𝙏𝙧𝙪𝙚, otherwise, the lowest value will be converted to NaN.
+
+```{python}
+import matplotlib.pyplot as plt # is needed for saving the file
+
+df.hist(column='Age', bins=10)
+
+plt.savefig('plots/figure1.png', dpi=300)  # saves the current figure
+
+```
+
+```{python}
+print(df.head().to_string()) #this prints nicely in the console only
+```
+
+![](images/image-1922890218.png)
+
+#### df.style.highlight_max() - Highlight values in Dataframe
+
+```{python}
+# Function to apply ORANGE to min and GREEN to max
+def highlight_min_max(df, min_color, max_color):
+
+  # This first line create a styler object
+  final_data = df.style.highlight_max(color = max_color)
+
+  # On this second line, no need to use ".style"
+  final_data = final_data.highlight_min(color = min_color)
+
+  return final_data
+
+df = df.head(10)
+
+#tbl = highlight_min_max(df, min_color='orange', max_color='green')
+
+import dataframe_image as dfi
+#dfi.export(tbl, '/plots/tbl_styled.png')
+```
+
+#### df.replace() - Replace some values in the dataframe
+
+```{python}
+
+import pandas as pd
+import numpy as np
+
+candidates_info = {
+    'Full_Name':["Aida Kone","Mamadou Diop","Ismael Camara","Aicha Konate",
+                 "Fanta Koumare", "Khalil Cisse"],
+    'degree':['Master','MS','Bachelor', "PhD", "Masters", np.nan],
+    'From':[np.nan,"Dakar","Bamako", "Abidjan","Konakry", "Lomé"],
+    'Age':[23,26,19, np.nan,25, np.nan],
+          }
+
+candidates_df = pd.DataFrame(candidates_info) 
+
+"""
+Replace Masters, Master by MS
+"""
+degrees_to_replace = ["Master", "Masters"]
+candidates_df.replace(to_replace = degrees_to_replace, value = "MS", inplace=True)
+
+"""
+Replace all the NaN by "Missing"
+"""
+candidates_df.replace(to_replace=np.nan, value = "Missing", inplace=True)
+
+candidates_df
+```
+
+#### df.compare() - Compare two data frames and get their differences\*\*
+
+```{python}
+import pandas as pd
+from pandas.testing import assert_frame_equal
+
+"""
+Create a second dataframe by changing "Full_Name" & "Age" columns
+"""
+candidates_df_test = candidates_df.copy()
+candidates_df_test.loc[0, 'Full_Name'] = 'Aida Traore'
+candidates_df_test.loc[2, 'Age'] = 28
+
+"""
+Compare the two dataframes: candidates_df & candidates_df_test
+"""
+# 1. Comparison showing only unmatching values
+candidates_df.compare(candidates_df_test)
+
+# 2. Comparison including similar values
+candidates_df.compare(candidates_df_test, keep_equal=True)
+
+```
+
+#### df.read(nrows=100) - Read only a subset of a very large dataset for sampling\*\*
+
+```{python}
+
+import pandas as pd 
+
+# Sample size of interest
+sample_size = 20
+
+# Read the sample on the fly
+
+sample = pd.read_csv('data/titanic.csv', nrows=sample_size)
+sample.head(3)
+```
+
+#### df.melt() - Unpivot dataset
+
+```{python}
+
+import pandas as pd
+
+# My experimentation data
+candidates= {
+    'Name':["Aida","Mamadou","Ismael","Aicha"],
+    'ID': [1, 2, 3, 4],
+    '2017':[85, 87, 89, 91],
+    '2018':[96, 98, 100, 102],
+    '2019':[100, 102, 106, 106],
+    '2020':[89, 95, 98, 100],
+    '2021':[94, 96, 98, 100],
+    '2022':[100, 104, 104, 107],
+          }
+"""
+Data in wide format
+"""
+salary_data = pd.DataFrame(candidates)
+"""
+Transformation into the long format
+"""
+long_format_data = salary_data.melt(id_vars=['Name', 'ID'], 
+                                    var_name='Year', value_name='Salary(k$)')
+
+print("Wide Format")
+candidates
+
+print("Long Format")
+long_format_data
+```
+
+#### pq.read_table - parquet
+
+<https://blog.datasyndrome.com/python-and-parquet-performance-e71da65269ce>
+
+```{python}
+import pyarrow as pa
+import pandas as pd
+df = pd.DataFrame({"a": [1, 2, 3],
+"b":[2.7,-1.2,5.4],
+"c": ['abc','xyz','pqr']})
+# Convert from pandas to Arrow
+table = pa.Table.from_pandas(df)
+# Convert back to pandas
+df_new = table.to_pandas()
+```
+
+```{python}
+pqfile = pq.read_table("Large-parquet.zip")
+df2 = pqfile.to_pandas()
+stats = df2.describe().T
+```
+
+### Jinja templates
+
+Primer on Jinja templates: <https://realpython.com/primer-on-jinja-templating/>
+
+```{python}
+# write_messages.py
+
+from jinja2 import Environment, FileSystemLoader
+
+max_score = 100
+test_name = "Python Challenge"
+students = [
+    {"name": "Sandrine",  "score": 100},
+    {"name": "Gergeley", "score": 87},
+    {"name": "Frieda", "score": 92},
+]
+
+environment = Environment(loader=FileSystemLoader("templates/"))
+template = environment.get_template("message.txt")
+
+for student in students:
+    filename = f"message_{student['name'].lower()}.txt"
+    content = template.render(
+        student,
+        max_score=max_score,
+        test_name=test_name
+    )
+    with open(filename, mode="w", encoding="utf-8") as message:
+        message.write(content)
+        print(f"... wrote {filename}")
+```
+
+When you create a Jinja environment with `FileSystemLoader`, you can pass the path that points to the folder of your templates. Instead of passing in a string, you now load `message.txt` as your template. Once your template is loaded, you can use it over and over again to fill it with content. In `write_messages.py`, you render `name` and `score` for each of your top students into a text file.
+
+Note that the keys of the `students` dictionary, along with `max_score` and `test_name`, match the template variables in `message.txt`. If you don't provide context for the variables in a template, they don't throw an error. But they render an empty string, which is usually not desired.
+
+When you call `template.render()`, you return the rendered template as a string. As with any other string, you can use `.write()` to write it into a file. To see `write_messages.py` in action, run the script:
+
+**Dynamic SQL Queries:**
+
+-   Jinja templates can be used to dynamically generate SQL queries based on user input or other runtime conditions. This can be useful in scenarios where the structure of the SQL query needs to change based on user selections.
+
+<!-- -->
+
+-   <div>
+
+    ```         
+    {% set condition = "WHERE status = 'active'" %} SELECT * FROM users {{ condition }} 
+    ```
+
+    </div>
+
+-   **Parameterized Queries:**
+
+    -   Jinja templates can be employed to parameterize SQL queries, allowing for the insertion of variables into the queries. This helps prevent SQL injection and makes the queries more maintainable.
+
+-   <div>
+
+    ```         
+    SELECT * FROM orders WHERE user_id = {{ user_id }} 
+    ```
+
+    </div>
+
+-   **Conditional Logic in Queries:**
+
+    -   Use Jinja's control structures for conditional logic in SQL queries. This can be helpful when you need to conditionally include or exclude parts of a query based on certain conditions.
+
+-   <div>
+
+    ```         
+    {% if order_status %} SELECT * FROM orders WHERE status = {{ order_status }} {% else %} SELECT * FROM orders {% endif %} 
+    ```
+
+    </div>
+
+-   **Iterating Over Data:**
+
+    -   When dealing with dynamic lists of values, you can use Jinja to iterate over them and generate parts of your SQL query accordingly.
+
+-   <div>
+
+    ```         
+    SELECT * FROM products WHERE category IN ({{ categories|join("', '") }}) 
+    ```
+
+    </div>
+
+-   **HTML Template Integration:**
+
+    -   In web applications, you might use Jinja not just for SQL but also for rendering HTML templates. You can embed SQL-related Jinja code within your HTML templates, creating a seamless integration between the data layer and the presentation layer.
+
+1.  <div>
+
+    ```         
+    <ul> {% for product in products %}     <li>{{ product.name }} - {{ product.price }}</li> {% endfor %} </ul> 
+    ```
+
+    </div>
+
+It's important to note that while Jinja can be used for generating dynamic SQL, it's crucial to handle user input and other external data carefully to prevent SQL injection attacks. Always use parameterized queries or other methods to ensure the security of your application.
+
+### Flask
+
+#### Notes from Flask Mega Tutorial by Miguel Grinberg
+
+##### Chapter 1: Hello, World!
+
+<https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world>
+
+```         
+microblog/   
+  venv/   
+  app/     
+    __init__.py     
+    routes.py   
+  microblog.py
+```
+
+```         
+app/__init__.py: Flask application instance
+```
+
+```{python}
+from flask import Flask
+
+app = Flask(__name__)
+
+from app import routes
+```
+
+The script above creates the application object as an instance of class `Flask` imported from the flask package. The `__name__` variable passed to the `Flask` class is a Python predefined variable, which is set to the name of the module in which it is used. Flask uses the location of the module passed here as a starting point when it needs to load associated resources such as template files.
+
+The `app` package is defined by the *app* directory and the *\_\_init\_\_.py* script, and is referenced in the `from app import routes` statement.
+
+Another peculiarity is that the `routes` module is imported at the bottom and not at the top of the script as it is always done. The bottom import is a well known workaround that avoids *circular imports*, a common problem with Flask applications.
+
+```         
+app/routes.py: Home page route
+```
+
+```{python}
+from app import app  
+
+@app.route('/') 
+@app.route('/index') 
+def index():
+  return "Hello, World!"
+```
+
+A decorator modifies the function that follows it. A common pattern with decorators is to use them to register functions as callbacks for certain events. In this case, the `@app.route` decorator creates an association between the URL given as an argument and the function. In this example there are two decorators, which associate the URLs `/` and `/index` to this function. This means that when a web browser requests either of these two URLs, Flask is going to invoke this function and pass its return value back to the browser as a response.
+
+To complete the application, you need to have a Python script at the top-level that defines the Flask application instance. Let's call this script *microblog.py*, and define it as a single line that imports the application instance:
+
+```         
+microblog.py: Main application module
+```
+
+```{python}
+from app import app
+```
+
+Before running it, though, Flask needs to be told how to import it, by setting the `FLASK_APP` environment variable:
+
+```         
+(venv) $ set FLASK_APP=microblog.py
+```
+
+```{shell}
+(venv) F:\IT\python\Flask\microblog>flask run
+```
+
+flask run
+
+```{shell}
+ * Serving Flask app 'microblog.py'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+```
+
+Ctrl-C to stop it.
+
+###### `FLASK_APP` environment variable
+
+Since environment variables aren't remembered across terminal sessions, you may find it tedious to always have to set the `FLASK_APP` environment variable when you open a new terminal window to work on your Flask application. But luckily, Flask allows you to register environment variables that you want to be automatically used when you run the `flask` command. To use this option you have to install the *python-dotenv* package:
+
+```         
+(venv) $ pip install python-dotenv
+```
+
+Now you can just write the environment variable name and value in a file named *.flaskenv* located in the top-level directory of the project:
+
+*.flaskenv*: Environment variables for flask command
+
+```         
+FLASK_APP=microblog.py
+```
+
+The `flask` command will look for the *.flaskenv* file and import all the variables defined in it exactly as if they were defined in the environment.
+
+**Chapter 2**
+
+Templates facilitate the separation between presentation and business logic. In Flask, templates are written as separate files, stored in a *templates* folder that is inside the application package. After making sure that you are in the *microblog* directory, create the directory where templates will be stored:
+
+```         
+(venv) $ mkdir app/templates
+```
+
+The `render_template()` function invokes the [Jinja](http://jinja.pocoo.org/) template engine that comes bundled with the Flask framework. Jinja substitutes `{{ ... }}` blocks with the corresponding values, given by the arguments provided in the `render_template()` call.
+
+###### Logic in templates
+
+Templates can also contain if else logic and for loops:
+
+\`\`\`{html\>} \<!doctype html\>
+
+<html>
+
+<head>
+
+{% if title %}
+
+<title>{{ title }} - Microblog</title>
+
+{% else %}
+
+<title>Welcome to Microblog!</title>
+
+{% endif %}
+
+</head>
+
+<body>
+
+<h1>Hello, {{ user.username }}!</h1>
+
+{% for post in posts %}
+
+<div>
+
+```         
+  <p>{{ post.author.username }} says: <b>{{ post.body}}</b></p>
+</div>
+{% endfor %}
+```
+
+</body>
+
+</html>
+
+```         
+
+##### **Chapter 2: Template Inheritance**
+
+It is a good practice to not repeat yourself if that is possible. Common content should be centrally maintained in a base template.
+
+Jinja has a template inheritance feature that specifically addresses this problem. In essence, what you can do is move the parts of the page layout that are common to all templates to a base template, from which all other templates are derived.
+```
+
+app/templates/base.html: Base template with navigation bar
+
+```         
+
+``` html
+<!doctype html>
+<html>
+    <head>
+      {% if title %}
+      <title>{{ title }} - Microblog</title>
+      {% else %}
+      <title>Welcome to Microblog</title>
+      {% endif %}
+    </head>
+    <body>
+        <div>Microblog: <a href="/index">Home</a></div>
+        <hr>
+        {% block content %}{% endblock %}
+    </body>
+</html>
+```
+
+In this template I used the `block` control statement to define the place where the derived templates can insert themselves. Blocks are given a unique name, which derived templates can reference when they provide their content.
+
+With the base template in place, I can now simplify *index.html* by making it inherit from *base.html*:
+
+```         
+app/templates/index.html: Inherit from base template
+```
+
+``` html
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Hi, {{ user.username }}!</h1>
+    {% for post in posts %}
+    <div><p>{{ post.author.username }} says: <b>{{ post.body }}</b></p></div>
+    {% endfor %}
+{% endblock %}
+```
+
+The `extends` statement establishes the inheritance link between the two templates, so that Jinja knows that when it is asked to render `index.html` it needs to embed it inside `base.html`. The two templates have matching `block` statements with name `content`, and this is how Jinja knows how to combine the two templates into one. 
+
+##### Chapter 3: Web Forms
+
+Web forms are one of the most basic building blocks in any web application. To handle the web forms in this application I'm going to use the [Flask-WTF](http://packages.python.org/Flask-WTF) extension, which is a thin wrapper around the [WTForms](https://wtforms.readthedocs.io/) package that nicely integrates it with Flask. 
+
+```         
+(venv) $ pip install flask-wtf
+```
+
+Enforcing the principle of *separation of concerns* requires putting the configuration in a separate file.
+
+The configuration settings are defined as class variables inside the `Config` class. As the application needs more configuration items, they can be added to this class, and later if I find that I need to have more than one configuration set, I can create subclasses of it.
+
+###### Config.py
+
+```         
+config.py: Secret key configuration
+```
+
+``` python
+import os
+
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+```
+
+The `SECRET_KEY` configuration variable that I added is an important part in most Flask applications. Flask and some of its extensions use the value of the secret key as a cryptographic key, useful to generate signatures or tokens. The Flask-WTF extension uses it to protect web forms against a nasty attack called [Cross-Site Request Forgery](http://en.wikipedia.org/wiki/Cross-site_request_forgery) or CSRF (pronounced "seasurf"). As its name implies, the secret key is supposed to be secret, as the strength of the tokens and signatures generated with it depends on no person outside the trusted maintainers of the application knowing it.
+
+The value of the secret key is set as an expression with two terms, joined by the `or` operator. The first term looks for the value of an environment variable, also called `SECRET_KEY`. The second term, is just a hardcoded string. The idea is that a value sourced from an environment variable is preferred, but if the environment does not define the variable, then the hardcoded string is used instead as a default. When you are developing this application, the security requirements are low, so you can just ignore this setting and let the hardcoded string be used. But when this application is deployed on a production server, I will be setting a unique and difficult to guess value in the environment, so that the server has a secure key that nobody else knows.
+
+Now that I have a config file, I need to tell Flask to read it and apply it. That can be done right after the Flask application instance is created using the `app.config.from_object()` method:
+
+``` python
+from flask import Flask
+from config import Config
+
+app = Flask(__name__)
+app.config.from_object(Config)
+
+from app import routes
+```
+
+###### **User Login Form**
+
+The Flask-WTF extension uses Python classes to represent web forms. A form class simply defines the fields of the form as class variables.
+
+Once again having separation of concerns in mind, I'm going to use a new *app/forms.py* module to store my web form classes. To begin, let's define a user login form, which asks the user to enter a username and a password. The form will also include a "remember me" check box, and a submit button:
+
+```         
+app/forms.py: Login form
+```
+
+``` python
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms.validators import DataRequired
+
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember_me = BooleanField('Remember Me')
+    submit = SubmitField('Sign In')
+```
+
+###### Form template
+
+The next step is to add the form to an HTML template so that it can be rendered on a web page. The good news is that the fields that are defined in the `LoginForm` class know how to render themselves as HTML, so this task is fairly simple. Below you can see the login template, which I'm going to store in file *app/templates/login.html*:
+
+```         
+app/templates/login.html: Login form template
+```
+
+``` html
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Sign In</h1>
+    <form action="" method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.username.label }}<br>
+            {{ form.username(size=32) }}
+        </p>
+        <p>
+            {{ form.password.label }}<br>
+            {{ form.password(size=32) }}
+        </p>
+        <p>{{ form.remember_me() }} {{ form.remember_me.label }}</p>
+        <p>{{ form.submit() }}</p>
+    </form>
+{% endblock %}
+```
+
+This template expects a form object instantiated from the `LoginForm` class to be given as an argument, which you can see referenced as `form`. This argument will be sent by the login view function, which I still haven't written.
+
+The HTML `<form>` element is used as a container for the web form. The `action` attribute of the form is used to tell the browser the URL that should be used when submitting the information the user entered in the form. When the action is set to an empty string the form is submitted to the URL that is currently in the address bar, which is the URL that rendered the form on the page. The `method` attribute specifies the HTTP request method that should be used when submitting the form to the server. The default is to send it with a `GET` request, but in almost all cases, using a `POST` request makes for a better user experience because requests of this type can submit the form data in the body of the request, while `GET` requests add the form fields to the URL, cluttering the browser address bar. The `novalidate` attribute is used to tell the web browser to not apply validation to the fields in this form, which effectively leaves this task to the Flask application running in the server. Using `novalidate` is entirely optional, but for this first form it is important that you set it because this will allow you to test server-side validation later in this chapter.
+
+The `form.hidden_tag()` template argument generates a hidden field that includes a token that is used to protect the form against CSRF attacks. All you need to do to have the form protected is include this hidden field and have the `SECRET_KEY` variable defined in the Flask configuration. If you take care of these two things, Flask-WTF does the rest for you.
+
+###### Form Views
+
+The final step before you can see this form in the browser is to code a new view function in the application that renders the template from the previous section. This view function can also go in the *app/routes.py* module with the previous one:
+
+```         
+app/routes.py: Login view function
+```
+
+``` python
+from flask import render_template
+from app import app
+from app.forms import LoginForm
+
+# ...
+
+@app.route('/login')
+def login():
+    form = LoginForm()
+    return render_template('login.html', title='Sign In', form=form)
+```
+
+###### Receiving Form Data
+
+What is missing is the processing after pressing the submit button. Flask-WTF makes the job really easy:
+
+```         
+app/routes.py: Receiving login credentials
+```
+
+``` python
+from flask import render_template, flash, redirect
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        flash('Login requested for user {}, remember_me={}'.format(
+            form.username.data, form.remember_me.data))
+        return redirect('/index')
+    return render_template('login.html', title='Sign In', form=form)
+```
+
+The first new thing in this version is the `methods` argument in the route decorator. This tells Flask that this view function accepts `GET` and `POST` requests, overriding the default, which is to accept only `GET` requests. The HTTP protocol states that `GET` requests are those that return information to the client (the web browser in this case). All the requests in the application so far are of this type. `POST` requests are typically used when the browser submits form data to the server (in reality `GET` requests can also be used for this purpose, but it is not a recommended practice). The "Method Not Allowed" error that the browser showed you before, appears because the browser tried to send a `POST` request and the application was not configured to accept it. By providing the `methods` argument, you are telling Flask which request methods should be accepted.
+
+The `form.validate_on_submit()` method does all the form processing work. When the browser sends the `GET` request to receive the web page with the form, this method is going to return `False`, so in that case the function skips the if statement and goes directly to render the template in the last line of the function.
+
+When the browser sends the `POST` request as a result of the user pressing the submit button, `form.validate_on_submit()` is going to gather all the data, run all the validators attached to fields, and if everything is all right it will return `True`, indicating that the data is valid and can be processed by the application. But if at least one field fails validation, then the function will return `False`, and that will cause the form to be rendered back to the user, like in the `GET` request case. Later I'm going to add an error message when validation fails.
+
+When `form.validate_on_submit()` returns `True`, the login view function calls two new functions, imported from Flask. The `flash()` function is a useful way to show a message to the user. A lot of applications use this technique to let the user know if some action has been successful or not. In this case, I'm going to use this mechanism as a temporary solution, because I don't have all the infrastructure necessary to log users in for real yet. The best I can do for now is show a message that confirms that the application received the credentials.
+
+The second new function used in the login view function is `redirect()`. This function instructs the client web browser to automatically navigate to a different page, given as an argument. This view function uses it to redirect the user to the index page of the application.
+
+When you call the `flash()` function, Flask stores the message, but flashed messages will not magically appear in web pages. The templates of the application need to render these flashed messages in a way that works for the site layout. I'm going to add these messages to the base template, so that all the templates inherit this functionality. This is the updated base template:
+
+```         
+app/templates/base.html: Flashed messages in base template
+```
+
+``` python
+<html>
+    <head>
+        {% if title %}
+        <title>{{ title }} - microblog</title>
+        {% else %}
+        <title>microblog</title>
+        {% endif %}
+    </head>
+    <body>
+        <div>
+            Microblog:
+            <a href="/index">Home</a>
+            <a href="/login">Login</a>
+        </div>
+        <hr>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul>
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </body>
+</html>
+```
+
+Here I'm using a `with` construct to assign the result of calling `get_flashed_messages()` to a `messages` variable, all in the context of the template. The `get_flashed_messages()` function comes from Flask, and returns a list of all the messages that have been registered with `flash()` previously. The conditional that follows checks if `messages` has some content, and in that case, a `<ul>` element is rendered with each message as a `<li>` list item. This style of rendering does not look great for status messages, but the topic of styling the web application will come later.
+
+An interesting property of these flashed messages is that once they are requested once through the `get_flashed_messages` function they are removed from the message list, so they appear only once after the `flash()` function is called.
+
+This is a great time to try the application one more time and test how the form works. Make sure you try submitting the form with the username or password fields empty, to see how the `DataRequired` validator halts the submission process.
+
+##### **Improving Field Validation**
+
+The validators that are attached to form fields prevent invalid data from being accepted into the application. The way the application deals with invalid form input is by re-displaying the form, to let the user make the necessary corrections.
+
+If you tried to submit invalid data, I'm sure you noticed that while the validation mechanisms work well, there is no indication given to the user that something is wrong with the form, the user simply gets the form back. The next task is to improve the user experience by adding a meaningful error message next to each field that failed validation.
+
+In fact, the form validators generate these descriptive error messages already, so all that is missing is some additional logic in the template to render them.
+
+Here is the login template with added field validation messages in the username and password fields:
+
+```         
+app/templates/login.html: Validation errors in login form template
+```
+
+``` python
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Sign In</h1>
+    <form action="" method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.username.label }}<br>
+            {{ form.username(size=32) }}<br>
+            {% for error in form.username.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.password.label }}<br>
+            {{ form.password(size=32) }}<br>
+            {% for error in form.password.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.remember_me() }} {{ form.remember_me.label }}</p>
+        <p>{{ form.submit() }}</p>
+    </form>
+{% endblock %}
+```
+
+The only change I've made is to add for loops right after the username and password fields that render the error messages added by the validators in red color. As a general rule, any fields that have validators attached will have any error messages that result from validation added under `form.<field_name>.errors`. This is going to be a list, because fields can have multiple validators attached and more than one may be providing error messages to display to the user.
+
+If you try to submit the form with an empty username or password, you will now get a nice error message in red.
+
+###### **Generating Links**
+
+So far you have seen a few instances in which links are defined. For example, this is the current navigation bar in the base template:
+
+``` python
+   <div>
+        Microblog:
+        <a href="/index">Home</a>
+        <a href="/login">Login</a>
+    </div>
+```
+
+One problem with writing links directly in templates and source files is that if one day you decide to reorganize your links, then you are going to have to search and replace these links in your entire application.
+
+To have better control over these links, Flask provides a function called `url_for()`, which generates URLs using its internal mapping of URLs to view functions. For example, the expression `url_for('login')` returns `/login`, and `url_for('index')` return `'/index`. The argument to `url_for()` is the *endpoint* name, which is the name of the view function.
+
+A secondary reason is that as you will learn later, some URLs have dynamic components in them, so generating those URLs by hand would require concatenating multiple elements, which is tedious and error-prone. The `url_for()` function is also able to generate these **complex URLs** with a much more elegant syntax.
+
+```         
+app/templates/base.html: Use url_for() function for links
+```
+
+``` python
+        <div>
+            Microblog:
+            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('login') }}">Login</a>
+        </div>
+```
+
+```         
+app/routes.py: Use url_for() function for links
+```
+
+``` python
+from flask import render_template, flash, redirect, url_for
+
+# ...
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        # ...
+        return redirect(url_for('index'))
+    # ...
+```
+
+##### Chapter 4: Databases
+
+Flask does not support databases natively, so we have full freedom to choose.
+
+[Flask-SQLAlchemy](http://packages.python.org/Flask-SQLAlchemy), is an extension that provides a Flask-friendly wrapper to the popular [SQLAlchemy](http://www.sqlalchemy.org/).
+
+The nice thing about SQLAlchemy is that it is an ORM not for one, but for many relational databases. SQLAlchemy supports a long list of database engines, including the popular [MySQL](https://www.mysql.com/), [PostgreSQL](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/). This is extremely powerful, because you can do your development using a simple SQLite database that does not require a server, and then when the time comes to deploy the application on a production server you can choose a more robust MySQL or PostgreSQL server, without having to change your application.
+
+[Flask-Migrate](https://github.com/miguelgrinberg/flask-migrate) is a Flask wrapper for [Alembic](https://alembic.sqlalchemy.org/), a database migration framework for SQLAlchemy. Working with database migrations adds a bit of work to get a database started, but that is a small price to pay for a robust way to make changes to your database in the future.
+
+Flask-SQLAlchemy needs a new configuration item added to the config file:
+
+```         
+config.py: Flask-SQLAlchemy configuration
+```
+
+``` python
+import os
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+class Config(object):
+    # ...
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'app.db')
+```
+
+The Flask-SQLAlchemy extension takes the location of the application's database from the `SQLALCHEMY_DATABASE_URI` configuration variable. As you recall from [Chapter 3](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-iii-web-forms), it is in general a good practice to set configuration from environment variables, and provide a fallback value when the environment does not define the variable. In this case I'm taking the database URL from the `DATABASE_URL` environment variable, and if that isn't defined, I'm configuring a database named *app.db* located in the main directory of the application, which is stored in the `basedir` variable.
+
+The database is going to be represented in the application by the *database instance*. The database migration engine will also have an instance. These are objects that need to be created after the application, in the *app/\_\_init\_\_.py* file:
+
+```         
+app/__init__.py: Flask-SQLAlchemy and Flask-Migrate initialization
+```
+
+``` python
+from flask import Flask
+from config import Config
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+
+app = Flask(__name__)
+app.config.from_object(Config)
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+from app import routes, models
+```
+
+I have made three changes to the *\_\_init\_\_.py* file. First, I have added a `db` object that represents the database. Then I added `migrate`, to represent the database migration engine. Hopefully you see a pattern in how to work with Flask extensions. Most extensions are initialized as these two. In the last change, I'm importing a new module called `models` at the bottom. This module will define the structure of the database.
+
+So now that I know what I want for my users table, I can translate that into code in the new *app/models.py* module:
+
+```         
+app/models.py: User database model       return '<User {}>'.format(self.username)
+```
+
+``` python
+from typing import Optional
+import sqlalchemy as sa
+import sqlalchemy.orm as so
+from app import db
+
+class User(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True,
+                                                unique=True)
+    email: so.Mapped[str] = so.mapped_column(sa.String(120), index=True,
+                                             unique=True)
+    password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
+
+    def __repr__(self):
+        return '<User {}>'.format(self.username)
+```
+
+I start by importing the `sqlalchemy` and `sqlalchemy.orm` modules from the SQLAlchemy package, which provide most of the elements that are needed to work with a database. The `sqlalchemy` module includes general purpose database functions and classes such as types and query building helpers, while `sqlalchemy.orm` provides the support for using models. Given that these two module names are long and will need to be referenced often, the `sa` and `so` aliases are defined directly in the import statements. The `db` instance from Flask-SQLAlchemy and the `Optional` typing hint from Python are imported as well.
+
+The `User` class created above will represent users stored in the database. The class inherits from `db.Model`, a base class for all models from Flask-SQLAlchemy. The `User` model defines several fields as class variables. These are the columns that will be created in the corresponding database table.
+
+Fields are assigned a type using Python *type hints*, wrapped with SQLAlchemy's `so.Mapped` generic type. A type declaration such as `so.Mapped[int]` or `so.Mapped[str]` define the type of the column, and also make values required, or *non-nullable* in database terms. To define a column that is allowed to be empty or *nullable*, the `Optional` helper from Python is also added, as `password_hash` demonstrates.
+
+In most cases defining a table column requires more than the column type. SQLAlchemy uses a `so.mapped_column()` function call assigned to each column to provide this additional configuration. In the case of `id` above, the column is configured as the primary key. For string columns many databases require a length to be given, so this is also included. I have included other optional arguments that allow me to indicate which fields are unique and indexed, which is important so that database is consistent and searches are efficient.
+
+The `__repr__` method tells Python how to print objects of this class, which is going to be useful for debugging. You can see the `__repr__()` method in action in the Python interpreter session below:
+
+```         
+>>> from app.models import User 
+>>> u = User(username='susan', email='susan@example.com') 
+>>> u 
+<User susan>
+```
+
+###### **Creating The Migration Repository**
+
+## R
+
+Cheatsheets for various libraries can be found here: <https://github.com/rstudio/cheatsheets.git>
+
+### Basics
+
+Cheatsheet for importing: <https://github.com/rstudio/cheatsheets/blob/main/data-import.pdf>
+
+To check a dataframe use:
+
+``` r
+class(df$Date)
+str(df)
+View(df)
+```
+
+##### **POSIXc**
+
+**`POSIXct`** is a common class in R used to represent date-time objects with both date and time information. It's a suitable class for storing dates and times, and it's often used when working with time series data.
+
+If your Date column is of class **`POSIXct`**, it means that it stores both date and time information. However, if you only need to work with dates (without time), you might want to convert it to a **`Date`** class instead.
+
+You can convert a **`POSIXct`** column to a **`Date`** class using the **`as.Date()`** function. Here's how you can do it:
+
+```         
+# Convert POSIXct column to Date
+df$Date <- as.Date(df$Date)
+```
+
+```{r}
+library(readr)
+scooby <- read_csv("F:/IT/Documentation/data/scoobydoo.csv")
+View(scooby)
+```
+
+```{r}
+library(readxl)
+scooby <- read_excel("F:/IT/Documentation/data/scoobydoo.xlsx")
+View(scooby)
+```
+
+```{r}
+mean(scooby$run_time)
+mean(scooby$imdb, na.rm = TRUE)  #mean on column with na returns an error
+```
+
+```{r}
+library(tidyverse)
+data() #long list of data sets
+View(mpg)
+?mpg  #help on mpg data set
+?mean #help on mean function
+glimps(mpg)
+
+#sub-setting the data with filter
+mpg_efficient <- filter(mpg, cty >= 20)
+View(mpg_efficient)
+
+mpg_ford <- filter(mpg, manufacturer == "ford")
+View(mpg_ford)
+
+#add a column with mutate (add or change a column)
+mpg_metric <- mutate(mpg, cty_metric = 0.425144 * cty)
+glimps(mpg_metric)
+
+#the pipe (ctrl shift m) avoids repeating the data set "...and then..."
+mpg_metric <- mpg %>%
+  mutate(cty_metric = 0.425144 * cty) %>% 
+  
+#group by
+mpg %>% 
+  group_by(class) %>% 
+  summarise(mean(cty),
+            median(cty))
+
+# Data viz with ggplot2 (gg --> grammar of graphics)
+ggplot(mpg, aes(x = cty)) +
+  geom_histogram() +
+  labs(x = "City mileage")
+
+ggplot(mpg, aes(x = cty)) +
+  geom_freqpoly() +
+  labs(x = "City mileage")
+
+ggplot(mpg, aes(x = cty)) +
+  geom_freqpoly() +
+  geom_histogram() +
+  labs(x = "City mileage")
+
+ggplot(mpg, aes(x = cty,
+                y = hwy)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+  labs(x = "City mileage")
+
+ggplot(mpg, aes(x = cty,
+                y = hwy,
+                color = class)) +
+  geom_point() +
+  scale_color_brewer(palette = "Dark2")
+
+```
+
+```{r}
+#functions
+
+keep_top <- function(values){
+  if (!is.numeric(values)){
+    warning("input vector must be numeric.",
+            call. = FALSE)
+    return(values)
+  }
+  values[values > mean(values, 
+                       na.rm = TRUE)]
+}
+
+# if the values are not numeric "input vector must be numeric." will be printed. ",call. = FALSE" will prevent from long system error 
+# information being displayed
+
+```
+
+```{r}
+#install a package outside of CRAN:
+remotes::install_github("Thinkr-open/golem")
+packageVersion("golem")
+```
+
+```{r}
+# Listing the files from the `golex` project using {fs}
+fs::dir_tree("golex")
+```
+
+```{golex}
+├── DESCRIPTION
+├── NAMESPACE
+├── R
+│   ├── app_config.R
+│   ├── app_server.R
+│   ├── app_ui.R
+│   └── run_app.R
+├── dev
+│   ├── 01_start.R
+│   ├── 02_dev.R
+│   ├── 03_deploy.R
+│   └── run_dev.R
+├── inst
+│   ├── app
+│   │   └── www
+│   │       └── favicon.ico
+│   └── golem-config.yml
+└── man
+    └── run_app.Rd
+
+```
+
+### golem
+
+Cheeetsheet: <https://github.com/rstudio/cheatsheets/blob/main/golem.pdf>
+
+<https://www.youtube.com/watch?v=SE6TnUV4nC4>
+
+#### Philosophy:
+
+![](images/golem_philosophy.PNG)
+
+#### Structure
+
+```{golex}
+├── DESCRIPTION
+├── NAMESPACE
+├── R
+│   ├── app_config.R
+│   ├── app_server.R
+│   ├── app_ui.R
+│   └── run_app.R
+├── dev
+│   ├── 01_start.R
+│   ├── 02_dev.R
+│   ├── 03_deploy.R
+│   └── run_dev.R
+├── inst
+│   ├── app
+│   │   └── www
+│   │       └── favicon.ico
+│   └── golem-config.yml
+└── man
+    └── run_app.Rd
+
+```
+
+#### Automation
+
+![](images/golem_automation.PNG)
+
+#### Template filesShiny
+
+![](images/golem_template_files.PNG)
+
+### Shiny
+
+#### Components
+
+#### Inputs
+
+Inputs allow users to interact with the webpage by clicking a button, entering text, selecting an option, and more.
+
++-------------------------------------------------------------+---------------------------------------------------------------------------------------------+
+| ![](https://shiny.posit.co/py/images/sliders.svg)**Inputs** | Links                                                                                       |
++=============================================================+=============================================================================================+
+| ![](images/Components_Input.PNG)                            | [Action Button](https://shiny.posit.co/py/components/inputs/action-button.html)             |
+|                                                             |                                                                                             |
+|                                                             | [Action Link](https://shiny.posit.co/py/components/inputs/action-link.html)                 |
+|                                                             |                                                                                             |
+|                                                             | [Checkbox](https://shiny.posit.co/py/components/inputs/checkbox.html)                       |
+|                                                             |                                                                                             |
+|                                                             | [Checkbox Group](https://shiny.posit.co/py/components/inputs/checkbox-group.html)           |
+|                                                             |                                                                                             |
+|                                                             | [Date Range Selector](https://shiny.posit.co/py/components/inputs/date-range-selector.html) |
+|                                                             |                                                                                             |
+|                                                             | [Date Selector](https://shiny.posit.co/py/components/inputs/date-selector.html)             |
+|                                                             |                                                                                             |
+|                                                             | [Numeric Input](https://shiny.posit.co/py/components/inputs/numeric-input.html)             |
+|                                                             |                                                                                             |
+|                                                             | [Password Field](https://shiny.posit.co/py/components/inputs/password-field.html)           |
+|                                                             |                                                                                             |
+|                                                             | [Radio Buttons](https://shiny.posit.co/py/components/inputs/radio-buttons.html)             |
+|                                                             |                                                                                             |
+|                                                             | [Select (Single)](https://shiny.posit.co/py/components/inputs/select-single.html)           |
+|                                                             |                                                                                             |
+|                                                             | [Select (Multiple)](https://shiny.posit.co/py/components/inputs/select-multiple.html)       |
+|                                                             |                                                                                             |
+|                                                             | [Selectize (Single)](https://shiny.posit.co/py/components/inputs/selectize-single.html)     |
+|                                                             |                                                                                             |
+|                                                             | [Selectize (Multiple)](https://shiny.posit.co/py/components/inputs/selectize-multiple.html) |
+|                                                             |                                                                                             |
+|                                                             | [Slider](https://shiny.posit.co/py/components/inputs/slider.html)                           |
+|                                                             |                                                                                             |
+|                                                             | [Slider Range](https://shiny.posit.co/py/components/inputs/slider-range.html)               |
+|                                                             |                                                                                             |
+|                                                             | [Switch](https://shiny.posit.co/py/components/inputs/switch.html)                           |
+|                                                             |                                                                                             |
+|                                                             | [Text Area](https://shiny.posit.co/py/components/inputs/text-area.html)                     |
+|                                                             |                                                                                             |
+|                                                             | [Text Box](https://shiny.posit.co/py/components/inputs/text-box.html)                       |
++-------------------------------------------------------------+---------------------------------------------------------------------------------------------+
+
+#### Outputs
+
+Outputs create a spot on the webpage to display results from the server, such as text, tables, plots, and more.
+
++--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
+| ![](https://shiny.posit.co/py/images/bar-chart-line-fill.svg)**Outputs** | Links                                                                                  |
++==========================================================================+========================================================================================+
+| ![](images/Components_Output.PNG)                                        | [Data Grid](https://shiny.posit.co/py/components/outputs/data-grid.html)               |
+|                                                                          |                                                                                        |
+|                                                                          | [DataTable](https://shiny.posit.co/py/components/outputs/datatable.html)               |
+|                                                                          |                                                                                        |
+|                                                                          | [Image](https://shiny.posit.co/py/components/outputs/image.html)                       |
+|                                                                          |                                                                                        |
+|                                                                          | [Map (ipyleaflet)](https://shiny.posit.co/py/components/outputs/map-ipyleaflet.html)   |
+|                                                                          |                                                                                        |
+|                                                                          | [Plot (Matplotlib)](https://shiny.posit.co/py/components/outputs/plot-matplotlib.html) |
+|                                                                          |                                                                                        |
+|                                                                          | [Plot (Plotly)](https://shiny.posit.co/py/components/outputs/plot-plotly.html)         |
+|                                                                          |                                                                                        |
+|                                                                          | [Plot (Seaborn)](https://shiny.posit.co/py/components/outputs/plot-seaborn.html)       |
+|                                                                          |                                                                                        |
+|                                                                          | [Text](https://shiny.posit.co/py/components/outputs/text.html)                         |
+|                                                                          |                                                                                        |
+|                                                                          | [UI](https://shiny.posit.co/py/components/outputs/ui.html)                             |
+|                                                                          |                                                                                        |
+|                                                                          | [Value Box](https://shiny.posit.co/py/components/outputs/value-box.html)               |
+|                                                                          |                                                                                        |
+|                                                                          | [Verbatim Text](https://shiny.posit.co/py/components/outputs/verbatim-text.html)       |
++--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
+
+#### Display Messages
+
+Outputs create a spot on the webpage to display results from the server, such as text, tables, plots, and more.
+
++------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+
+| ![](https://shiny.posit.co/py/images/chat-dots-fill.svg)**Display Messages** | Links                                                                                                 |
++==============================================================================+=======================================================================================================+
+| ![](images/Components_Message.PNG)                                           | [Modal](https://shiny.posit.co/py/components/display-messages/modal.html)                             |
+|                                                                              |                                                                                                       |
+|                                                                              | [Notifications / Help Text](https://shiny.posit.co/py/components/display-messages/notifications.html) |
+|                                                                              |                                                                                                       |
+|                                                                              | [Progress Bar](https://shiny.posit.co/py/components/display-messages/progress-bar.html)               |
+|                                                                              |                                                                                                       |
+|                                                                              | [Tooltips](https://shiny.posit.co/py/components/display-messages/tooltips.html)                       |
++------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------+
+
+#### Reactive flow
+
+When you moved the slider in the app above, a series of actions were kicked off, resulting in the output on the screen changing. This is called reactivity. <https://shiny.posit.co/py/docs/overview.html>
+
+The diagram below shows how the updated input flows through a Shiny application.
+
+![](images/reactive-flow.svg)
+
+Inputs, like our slider `n`, are reactive values: when they change, they automatically cause any the reactive functions that use them (like `txt()`) to recalculate.
+
+#### Page Layout
+
+#### Common structure
+
+The code below show a common setup for shiny apps---a page with a sidebar and main panel--- along with a graph of how the pieces get laid out on a webpage.
+
+```{python}
+app_ui = ui.page_fluid(
+    ui.panel_title(),
+    ui.layout_sidebar(
+        ui.panel_sidebar(
+            ...
+        ),
+        ui.panel_main(
+            ...
+        ),
+    ),
+)
+```
+
+![](images/CommonStructure.PNG)
+
+```{python}
+from shiny import App, render, ui
+import matplotlib.pyplot as plt
+import numpy as np
+
+style="border: 1px solid #999;"
+
+app_ui = ui.page_fluid(
+    ui.panel_title("Simulate a normal distribution"),
+
+    ui.layout_sidebar(
+
+      ui.panel_sidebar(
+        ui.input_slider("n", "Sample size", 0, 1000, 250),
+        ui.input_numeric("mean", "Mean", 0),
+        ui.input_numeric("std_dev", "Standard deviation", 1),
+        ui.input_slider("n_bins", "Number of bins", 0, 100, 20),
+      ),
+
+      ui.panel_main(
+        ui.row(
+            ui.column(4, "row-1 col-1", style=style),
+            ui.column(8, "row-1 col-2", style=style),
+        ),
+        ui.row(
+            ui.column(6, "row-2 col-1", style=style),
+            ui.column(6, "row-2 col-2", style=style),
+        ),
+        ui.output_plot("plot")
+      ),
+    ),
+)
+
+
+def server(input, output, session):
+
+    @output
+    @render.plot(alt="A histogram")
+    def plot() -> object:
+        x = np.random.normal(input.mean(), input.std_dev(), input.n())
+
+        fig, ax = plt.subplots()
+        ax.hist(x, input.n_bins(), density=True)
+        return fig
+
+
+app = App(app_ui, server)
+```
+
+![](images/SideBarPage.PNG){width="499"}
+
+Resources:
+
+See books folder:
+
+-   Mathematical Statistics with Resamping R
+
+-   Open Into Statistics
+
+[The-Hundred-Page-Machine-Learning-Book](The-Hundred-Page-Machine-Learning-Book)
+
+Designing Machine Learning Systems
+
+R for Data Science: <https://r4ds.had.co.nz/data-visualisation.html>
+
+Introduction to Data Science: <https://bookdown.org/ronsarafian/IntrotoDS/>
+
+1\. Python for Data Analysis 👉[https://amzn.to/3RPeReC](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbnlKRlBfanhCZS1vblIwTFFnYnlqd1dvMXpUUXxBQ3Jtc0tuNllzZVVmLWJtVm12d1RjbnFkazlRTmlwLTZpZUoySlF5M19hVDRiNmhkQzYwcWQ4TThjd0JleWk1X081cGtaVzN2ZUlOSGVBWGtQSzVoUHhONS13OEpqcW5GVWVRZDd2d2FLUU93NVA5T3J2Vkl4Yw&q=https%3A%2F%2Famzn.to%2F3RPeReC&v=uFTd2b23GvI) 2. Practical Statistics for Data Scientists 👉 [https://amzn.to/3CF5Pws](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqa0lGYVJVWS02SUFkY0lpUmFLazJNLTJaZ2FMUXxBQ3Jtc0tsbGpscHJXMHE2aWhIZVZrSHJYelYwbkpDYlk0MC1GbzlkSkU0OE9BcUdKZ0ZrVFo0Y2FvdnBQR2Z2T0J2OXNLNDRBb2dxZVlkRmJZQWVrdnlIM3dPUWZNRk9nWkpobzhBb20tX3pUaEQ2WmI1Qm55OA&q=https%3A%2F%2Famzn.to%2F3CF5Pws&v=uFTd2b23GvI) 3. Naked Statistics 👉 [https://amzn.to/3CIhwCu](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbEt1YmlyRWowcmNmQ0xVUk94ZHJZM091ajF2Z3xBQ3Jtc0trLTA3cWdTQkNUSGZ5Tzk2bWZxcGZzRGdNenFCYUJ5azRoMEJwTUhCUW84TjdLbHJnYkpwMHYxTzdiTXRGNW9ySlBUemNLdGwxQ1NqZENiWkJMVW96cTRHaTZxcTEyTkNOa3VJZVpVRktJREVHVlVfQQ&q=https%3A%2F%2Famzn.to%2F3CIhwCu&v=uFTd2b23GvI) 4. Machine Learning Simplified 👉 [https://themlsbook.com/](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbi1HTWFZUWhuUHA2OWhvdmVHSkRSdWtpREp5QXxBQ3Jtc0tsVHpYTjgtZzVXRGl4Qnlva3dhc0s5dV81M0ZCaEY4N3hPWFQtNnE1NkZIZlpzRjRZTU1mYllveldhR09qVV9NUTZiMzJJT1k2dTQzeWdEelgtVGdDTXNJRlpvdWh1V3MzdjJGVE5JS3M2dXJiZmdhcw&q=https%3A%2F%2Fthemlsbook.com%2F&v=uFTd2b23GvI) 5. Hands-On ML with Scikitlearn and Tensorflow👉 [https://amzn.to/3fTKZ3y](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbF9nS2lRZjN2dkZoUEFla05YSGhLQkVsUV8td3xBQ3Jtc0trRDRNZU9Zcmh3VlhDTzdKd0pyWFZJaUhOY2xnY2E0Q1QyemFNM1pDeDR0S0t1Z2FxYXRRS2Jad1lwWVJzOVcyOGR0VExhQmh4S0ROU3d3ZWNFNTZIVXRiTktZZFJBSEZ1bmkyeVBHMFVyU1NzTmhOZw&q=https%3A%2F%2Famzn.to%2F3fTKZ3y&v=uFTd2b23GvI) 6. Designing Machine Learning Systems👉 [https://amzn.to/3Cajv0Y](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbFJ6YUxrZGJyRnY3UTVtRklWcldjSTU4Ym0xQXxBQ3Jtc0tuWEdFak1JSG5jclVva2lMZW9td0w4MURLOUlpTDNibDRaOXZLV25abV9yT194Vy12UVY4WGs1V0c2NmhlY0xkbnRYRDVDWlhiZ1M5NktpWVNGM1p0RDVTVHBWZVU0YjlLVV9PY2UwYjVtU1VGQ2JIVQ&q=https%3A%2F%2Famzn.to%2F3Cajv0Y&v=uFTd2b23GvI) 7. Storytelling with Data 👉 [https://amzn.to/3EvbS83](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbXpTV1lGMC1zNWNDLUtzdTFaOHZNQkxDNmo4d3xBQ3Jtc0trLXR5Yl9QQzJxam5tbVZ0V1otMkkwUmM5OFZJT09weFh5MV80d1pSTWNNMW5sSWxPM2pLc1R3NUNfcnZjSEctVFNFM3pNcUpmTmt5eTF2U1BCbWlFSHRTUUJhRWVKSVlLdHlnZUlWMmljdnczeWVUTQ&q=https%3A%2F%2Famzn.to%2F3EvbS83&v=uFTd2b23GvI) 8. Interactive Data Visualization for the Web 👉 [https://amzn.to/3rHvDl6](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbVhhNzR5T05jZGRXYkpBclhkRkFubGc1V2dUQXxBQ3Jtc0trWURhd3Q5Y3ltS0dSRkJMbi14TGppSkEwVmV6b21VOWdKLXdfSzlxbFBTVm9iMWo3RXV5SVllUnhaZTZBZWlkWGgyS2s4U1ZUWFhxbzJiMUtsOW5EOUtDai1RZDhjT3l0VWVqY1NPNkIzaVZGc1VxSQ&q=https%3A%2F%2Famzn.to%2F3rHvDl6&v=uFTd2b23GvI)
+
+[Structure your app: introduction to Shiny modules - YouTube](https://www.youtube.com/watch?v=oOYaHsPXLvs)
+
+#### Reactive inputs
+
+![](images/Shiny_Modules_Reactive.PNG)
+
+#### Output values from modules
+
+![](images/Shiny_Modules_OutputValues_1.PNG)
+
+![](images/Shiny_Modules_OutputValues.PNG)
+
+#### Nesting
+
+![](images/Shiny_Modules_Nesting.PNG)
+
+#### Engineering Shiny
+
+True multipage shiny app using brochure package: <https://www.youtube.com/watch?v=8UiCqSKlfew>
+
+There is also a book called: Engineering Production-Grade Shiny Apps: <https://engineering-shiny.org/>
+
+#### Building Shiny Applications
+
+R Shiny Masterclass: Building, Styling, and Scaling Shiny Applications \|\| Posit \|\| Appsilon - YouTube:
+
+<https://www.youtube.com/watch?v=MYVojGHeKAc>
+
+##### Bootstrap Library (bslib)
+
+![](images/Shiny_bslib_start_using.png)
+
+###### Preview a theme
+
+![](images/Shiny_bslib_theme.png)
+
+###### Create your own theme
+
+![](images/Shiny_bslib_theme_create_own_theme.png)
+
+###### Use with rmarkdown
+
+![](images/Shiny_bslib_theme_use_with_rmarkdown.png)
+
+![](images/Shiny_bslib_theme_not_everything.png)
+
+plotly through ggplotly.
+
+![](images/Shiny_bslib_no_plots.png)
+
+###### Thematic
+
+![](images/Shiny_bslib_thematic_pass_on.png)
+
+![](images/Shiny_bslib_thematic_in_general.png)
+
+![](images/Shiny_thematic_Auto.png)
+
+![](images/Shiny_thematic_example.png)
+
+###### CSS (Cascading Style Sheets)
+
+Code: github.com/pedrocoutnhosilva
+
+![](images/Shiny_css_what_is_css.png)
+
+![](images/Shiny_css_add_to_shiny.png)
+
+![](images/Shiny_css_last_resort.png)
+
+![](images/Shiny_css_www.png)
+
+###### SSAS vs CSS
+
+Best solution is with SASS which is built on top of CSS
+
+![](images/Shiny_css_sass.png)
+
+![](images/Shiny_css_sass_in_R.png)
+
+![](images/Shiny_css_sass_in_R_example.png)
+
+![](images/Shiny_css_sass_resources.png)
+
+##### Update Functions
+
+![](images/Shiny_update_functions.png)
+
+![](images/Shiny_proxy_widgets.png)
+
+![](images/Shiny_proxy_widgets_DT.png)
+
+##### Custom messages
+
+![](images/Shiny_custom_messages.png)
+
+![](images/Shiny_custom_messages_2.png)
+
+![](images/Shiny_custom_messages_3.png)
+
+##### Complementing Shiny Extension -- most important ones
+
+-   ShinyJs
+
+-   Shiny Widgets
+
+-   ShinyCSSLoader
+
+-   bs4Dash
+
+-   ShinyMobile
+
+-   ShinySemantic
+
+-   See more: <https://github.com/nanxstats/awesome-shiny-extensions>
+
+![](images/Shiny_awesome.png)
+
+##### R6 Classes
+
+![](images/Shiny_R6_Classes.png)
+
+![](images/Shiny_code_organisation.png)
+
+![](images/Shiny_R6_putting_all_together.png)
+
+##### Continuous Integration
+
+![](images/Shiny_continuous_integration.png)
+
+![](images/Shiny_continuous_integration_2.png)
+
+![](images/Shiny_project_templates.png)
+
+![](images/Shiny_lack_of_dev_environment.png)
+
+![](images/Shiny_dedicated_dev_environment%20(2).png)
+
+![](images/Shiny_dedicated_dev_environment.png)
+
+##### Testing
+
+![](images/Shiny_unit_test.png)
+
+##### data.validator
+
+![](images/Shiny_data_validator%20(2).png)
+
+![](images/Shiny_data_validator.png)
+
+##### End-to-end testing
+
+![](images/Shiny_end_to_end.png)
+
+![](images/Shiny_load_test.png)
+
+![](images/Shiny_recap.png)
+
+##### Scaling Shiny - how?
+
+![](images/Shiny_scaling.png)
+
+F:\\IT\\python\\dash\\warning.ipynb
+
+F:\\IT\\python\\dash\\side_bar.py
+
+#### Reticulate
+
+Cheetsheet: <https://github.com/rstudio/cheatsheets/blob/main/reticulate.pdf>
+
+In general, there may be some overhead associated with the communication between R and Python, which could lead to slightly slower performance compared to using pure R. The reticulate package involves inter-process communication between R and the Python interpreter, and this communication can introduce some latency.
+
+However, for many tasks, the performance impact may be negligible, especially if the Python functions you are calling are doing heavy computational work or if the data transfer between R and Python is relatively small.
+
+It's essential to consider the specific use case and profile the performance of your code to determine if the difference is significant for your application. Additionally, optimizing the Python functions you are calling can help minimize any potential performance impact.
+
+If performance is a critical factor for your project, you might want to consider reimplementing the functionality in R using native R code or exploring other performance optimization techniques. The choice between reticulate and pure R should also take into account the existing codebase, libraries, and expertise available in your team.
+
+Here a very basic setup / application
+
+```         
+project_folder/
+|-- _functions/
+|   |-- __init__.py
+|   |-- fx.py
+|-- script.R
+```
+
+```{python}
+# fx.py
+
+def add_numbers(a, b):
+    return a + b
+
+def multiply_numbers(a, b):
+    return a * b
+```
+
+```{r}
+# script.R
+
+# Load the reticulate library
+library(reticulate)
+
+# Get the directory of the script
+script_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+
+# If running outside RStudio, fallback to a different method
+if (is.na(script_dir) || script_dir == "") {
+  script_dir <- dirname(parent.frame(2)$ofile)
+}
+
+# Set the working directory to the script directory
+setwd(script_dir)
+
+# Specify the path to the Python script
+python_script <- "_functions/fx.py"
+
+# Use source_python to source the Python script
+source_python(python_script)
+
+# Call the Python functions from R
+result_add <- py$add_numbers(2, 3)
+result_multiply <- py$multiply_numbers(4, 5)
+
+# Print the results
+cat("Result of adding numbers:", result_add, "\n")
+cat("Result of multiplying numbers:", result_multiply, "\n")
+
+```
+
+<https://www.youtube.com/watch?v=U3ByGh8RmSc>
+
+Installation:
+
+```{r}
+#install.packages("reticulate")
+#install.packages("png")
+```
+
+```{r}
+#To change the settings where reticulate should look for pyhon type
+usethis::edit_r_profile()
+
+#A new window will open where the following needs to be entered:
+```
+
+Sys.setenv(RETICULATE_PYTHON = "C:\\\\Users\\\\Alois\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python310\\\\python\\\\python.exe")
+
+![](images/image-300797467.png)
+
+<https://rstudio.github.io/reticulate/>
+
+**After changing the settings, R needs to be restarted to apply them**
+
+```{r}
+library(reticulate)
+repl_python()
+```
+
+The Terminal need to be defined / set up as custom:
+
+![](images/image-1694781897.png)
+
+Then click apply, and close the existing Terminal that was set up when RStudio opened.
+
+Then RESTART R followed by open a new terminal by clicking Tool, Terminal, New Terminal
+
+Python scripts and R Scripts can be opened and run in parallel.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reticulate)
+library(ggplot2)
+```
+
+```{python libraries}
+import pandas as pd
+titanic = pd.read_csv("data/titanic.csv")
+```
+
+```{python}
+list(titanic.columns)
+```
+
+```{python}
+titanic.plot.scatter(x='Age', y='Fare', alpha=0.3)
+
+#will not show online, would have to be rendered
+```
+
+```{r r-plot, warning=FALSE, fig.height=5, fig.width=5}
+ggplot(py$titanic, aes(x = Age, y = Fare)) +
+  geom_point()
+```
+
+Subsetting data in pandas
+
+```{python}
+titanic[["Age", "Fare"]]
+```
+
+```{python}
+titanic[titanic["Age"]>70]
+```
+
+```{python}
+first_passenger_age = titanic["Age"][0]
+```
+
+We can use markdown inline syntax and "py\$" syntax to reach into the Python environment and access 'first_passenger_age' (which is a string).
+
+The destination of the first passenger is `r py$first_passenger_age`.
+
+## Data Visualisation
+
+Cheetsheet: <https://github.com/rstudio/cheatsheets/blob/main/data-visualization.pdf>
+
+### Radar Chart
+
+<https://jtr13.github.io/cc20/radar-chart.html>
+
+![](images/Radar_Chart.png)
+
+### How to Create a Box and Whisker Plot in Power BI Desktop
+
+The content is taken from: <https://www.mssqltips.com/sqlservertip/7498/box-and-whisker-plot-in-power-bi-desktop/>
+
+![](images/BoxWiskerPlot.png)
+
+### Components of Box and Whisker Plot
+
+In short, a box plot summarizes data using five different statistics (five-number data summary) and includes:
+
+-   **Minimum value:** This represents the lower whisker of a box plot. Excluding any outliers, the minimum value reflects the 0th percentile or the lowest data point in the data set. The minimum value cannot fall below Q1 - (1.5 x IQR); otherwise, that would be counted as an outlier.
+
+-   **Q1:** The lower quartile reflects the 25th percentile. In other words, it is the value below which the lower 25 percent of the data is present. To calculate the Q1, it is the median (center value) of the observations in an ordered list left to the location of the median of the whole dataset.
+
+-   **Q2:** Median is the middle value of a dataset, and thus it will split the data in half. It can also be considered as the 50th percentile. To compute the median, we capture the middlemost value in the data set after the data is arranged in either an ascending or descending order.
+
+-   **Q3:** The upper quartile reflects the 75th percentile or the numerical value above which the upper 25 percent of the data is present. To calculate the 75th percentile, we calculate the median of the total observations in an ordered list to the right of the location of the overall median.
+
+-   **Maximum value:** It is the largest value in the data and is thus the 100th percentile. Any data point larger than the maximum value will be considered an outlier. The maximum value cannot exceed Q3 + (1.5 x IQR).
+
+### Importance of Box and Whisker Plot
+
+Some other statistical concepts relevant to a box plot are interquartile range (IQR) and outliers. IQR is the difference between the upper quartile (Q3) and the lower quartile (Q2). This statistical metric computes the spread of the middle half of a given data distribution, which makes it useful as extreme values influence it less. In a box plot diagram, it is the horizontal length of the rectangular box. On the other hand, outliers are data points that appear extreme relative to the rest of the dataset. In a box plot, outliers are depicted as dots beyond the whiskers. It is important to scan data for outliers as it can help determine the skew in the distribution and, more significantly, determine the causality of a suspected outlier.
+
+Now that we understand the basics of a boxplot, it is not difficult to interpret its usefulness to statisticians and analytical experts. Their importance is best reflected when we compare multiple variables of the same category. Since boxplots are compact and simplistic in illustrating data, it is much more suited for comparison-based use cases. Furthermore, they also provide a quick visual summary of statistics like the median value of data, spread, data symmetry, and signs of skewness.
+
+![](images/BoxWiskerPlot_02.png){width="461"}
+
+### R Cheat Sheet
+
+```{r}
+# getting and setting working directory
+setwd("C:/Users/alois/Documents")
+getwd()
+```
+
+```{r}
+# write and read csv
+write.csv(data_10,                  # Export data frame to CSV file
+          "data_10.csv",
+          row.names = FALSE)
+
+Data_11 <- read.csv("data_10.csv")   # Import data frame from CSV file
+data_11  
+```
+
+Data wrangling links:
+
+[1) Creation of Example Data](https://statisticsglobe.com/data-manipulation-r#creation-of-example-data)
+
+[2) Example 1: Select Column of Data Frame](https://statisticsglobe.com/data-manipulation-r#example-1-select-column-of-data-frame)
+
+[3) Example 2: Remove Column from Data Frame](https://statisticsglobe.com/data-manipulation-r#example-2-remove-column-from-data-frame)
+
+[4) Example 3: Add New Column to Data Frame](https://statisticsglobe.com/data-manipulation-r#example-3-add-new-column-to-data-frame)
+
+[5) Example 4: Rename Columns of Data Frame](https://statisticsglobe.com/data-manipulation-r#example-4-rename-columns-of-data-frame)
+
+[6) Example 5: Reorder Rows of Data Frame](https://statisticsglobe.com/data-manipulation-r#example-5-reorder-rows-of-data-frame)
+
+[7) Example 6: Subset Data Frame Rows](https://statisticsglobe.com/data-manipulation-r#example-6-subset-data-frame-rows)
+
+[8) Example 7: Replace Values in Data Frame](https://statisticsglobe.com/data-manipulation-r#example-7-replace-values-in-data-frame)
+
+[9) Example 8: Remove Duplicate Rows in Data Frame](https://statisticsglobe.com/data-manipulation-r#example-8-remove-duplicate-rows-in-data-frame)
+
+[10) Example 9: Aggregate Values in Data Frame by Group](https://statisticsglobe.com/data-manipulation-r#example-9-aggregate-values-in-data-frame-by-group)
+
+[11) Video, Further Resources & Summary](https://statisticsglobe.com/data-manipulation-r#video-further-resources-summary)
+
+### BSLIB
+
+Carson Sievert: Towards the next generation of Shiny UI
+
+<https://www.youtube.com/watch?v=avZ7TDTRnVo>
+
+[bit.ly/bslib-dashboard-slides](bit.ly/bslib-dashboard-slides)
+
+### Databases
+
+<https://rodgersnotes.wordpress.com/2019/01/01/creating-connectivity-between-r-studio-sql-server-17/>
+
+```{r}
+# Generic exmple for example for SQL Seerver
+# install.packages("odbc")
+# install.packages("DBI")
+
+library(odbc) #Contains drivers to connect to a database
+library(DBI)  #Contains functions for interacting with the database
+
+con <- DBI::dbConnect(drv = odbc::odbc(),
+                      Driver = "driver_name",
+                      Server = "server_url",  
+                      Database = "database_name",
+                      user = "user",         #optional
+                      password = "password"  #optional
+                      )
+
+res <- DBI::dbGetQuery(conn = con,
+                       statement = "
+                SELECT who.country, who.year, who.new_sp_m014, population.population 
+                FROM population, who 
+                WHERE who.country = 'Afghanistan' AND 
+                who.year ＞ 1995 AND 
+                who.country = population.country AND 
+                who.year = population.year
+                ")
+res
+```
+
+```{sql, connection = con, output.var = “M1_results” }
+SELECT 
+  who.country, who.year, who.new_sp_m3544, population.population
+FROM 
+  who
+LEFT JOIN
+  population ON population.country = who.country AND population.year = who.year
+WHERE
+  who.country IN ('Brazil', 'Germany') AND
+  who.year >= 2000 AND
+  who.year <= 2010
+```
+
+```{r}
+# Example around SQLight
+# install.packages("RSQL")
+# install.packages("RSQLite")
+# install.packages("tidyverse")
+
+library(RSQL)      #Generate and Process 'SQL' Queries in R
+library(RSQLite)   #Can create an in-memory SQL database
+library(tidyverse) #Provides helpful functions and sample data to use in R
+
+data("population")
+population
+
+data("who")
+who
+
+#Build the placeholder
+con <- dbConnect(drv = RSQLite::SQLite(),
+                 dbname = ":memory:")
+
+dbListTables(con)
+
+#Load the population table
+dbWriteTable(conn = con, 
+             name = "population",
+             value = population)
+
+#Load the who table
+dbWriteTable(conn = con, 
+             name = "who",
+             value = who)
+
+dbListTables(con)
+
+res <- DBI::dbGetQuery(conn = con,
+                       statement = "
+                SELECT who.country, who.year, who.new_sp_m014, population.population 
+                FROM population, who 
+                WHERE who.country = 'Afghanistan' AND 
+                who.year ＞ 1995 AND 
+                who.country = population.country AND 
+                who.year = population.year
+                ")
+res
+```
+
+## Plotly
+
+```{r}
+#install.packages("plotly")
+#install.packages("tidyverse")
+library(plotly)
+library(tidyverse)
+
+df <-
+  ggplot2::diamonds %>% 
+  group_by(cut) %>% 
+  summarize(price = mean(price),
+            table = mean(table),
+            depth = mean(depth))
+
+df_long <- df %>% 
+  pivot_longer(cols = 2:4)
+
+df_count <- count(ggplot2::diamonds, cut, clarity)
+
+plot_ly(
+  data = df,
+  x = ~cut,
+  y = ~price,
+  type = "bar"
+)
+
+plot_ly(
+  data = df,
+  x = ~cut,
+  y = ~depth,
+  type = "bar",
+  name = "Depth"
+) %>% 
+  add_trace(y=~table, name = "Table")
+
+plot_ly(
+  data = df_long %>%  filter(name != "price"),
+  x = ~name,
+  y = ~value,
+  color = ~cut,
+  type = "bar"
+)
+
+plot_ly(
+  data = df_count,
+  x = ~clarity,
+  y = ~n,
+  color = ~cut,
+  type = "bar"
+) %>% 
+  layout(barmode = "stack")
+
+df_count %>% 
+  group_by(clarity)%>% 
+  mutate(prop = n/sum(n)) %>% 
+  plot_ly(x = ~clarity,
+          y = ~prop,
+          color = ~cut,
+          type = "bar") %>% 
+  layout(barmode = "stack")
+
+plot_ly(
+  data = df,
+  y = ~cut,
+  x = ~price,
+  type = "bar"
+)
+
+plot_ly(
+  data = df,
+  x = ~cut,
+  y = ~price,
+  type = "bar",
+  text = ~paste0("$",round(price,2)),
+  textposition = "outside"
+)
+```
+
+### Code structure for creating animation using Plotly
+
+<https://www.youtube.com/watch?v=AbuK2F57NEs>
+
+<https://github.com/deepshamenghani/posit_plotly_crosstalk.git>
+
+```{r}
+# Simple bar plot
+dataset |> 
+  plotly::plot_ly(y=~count, x = ~season) |> 
+  add_bars(type="bar")
+
+# Bar plot with animation
+dataset |> 
+  plotly::plot_ly(y=~count, x = ~season) |> 
+  add_bars(frame = ~Episode, type="bar") |> 
+  animation_opts(frame = 800, transition = 300)
+```
+
+### Code structure for adding interativity with Crosstalk
+
+```{r}
+# Simple bar plot
+dataset |> 
+  plotly::plot_ly(y=~F_score, x = ~episode) |> 
+  add_bars(type="bar")
+
+shared_data <- crosstalk::SharedData$new(dataset)
+
+# Bar plot with interactivity
+plot <- shared_data |> 
+  plotly::plot_ly(y=~F_score, x = ~episode) |> 
+  add_bars(type="bar")
+  
+checkbox_season <- crosstalk::filter_checkbox(
+        id = "Season", 
+        label = "Season", 
+        sharedData = shared_data,
+        group = ~Season
+)
+
+bscols(checkbox_season, plot)
+
+```
+
+### Code structure for linking two plots
+
+```{r}
+shared_data <- crosstalk::SharedData$new(dataset, key=~Dating_Coaching_flag)
+
+plot1 <- shared_data |> 
+  plotly::plot_ly() |> 
+  group_by(Dating_Coaching_flag) |> 
+  summarise(avg.fscore = mean(F_score, na.rm=TRUE)) |> 
+  add_bars(y = ~Dating_Coaching_flag, x = ~avg.fscore, type="bar")
+  
+plot2 <- shared_data |> 
+  plotly::plot_ly(x = ~Episode, y = ~F_count) |> 
+  add_bars(type="bar") 
+
+subplot(plot1,plot2) |> 
+  plotly::highlight(
+              persistent = TRUE
+            , on = "plotly_click"
+            , off = "plotly_doubleclick"
+            , dynamic = TRUE) 
+```
+
+## ChatGPT
+
+ChatGPT is a variant of the GPT-3 language model, specifically designed for conversational language generation. To use ChatGPT in Python, you will need to install the OpenAI API client and obtain an API key. In this article we'll setup a simple example teaching you the exact steps which are needed to make use of ChatGPT in your Python program
+
+Tutorial: <https://www.youtube.com/watch?v=5MvYe44zen4>\
+\
+Create an account and login: <https://platform.openai.com/overview>
+
+![](images/image-2078851254.png)
+
+![](images/image-1371493022.png)
+
+![](images/image-1277077451.png)
+
+```{python}
+import openai
+
+# Set up the OpenAI API client
+openai.api_key = "YOUR_API_KEY"
+
+# Set up the model and prompt
+model_engine = "text-davinci-003"
+prompt = "Hello, how are you today?"
+
+# Generate a response
+completion = openai.Completion.create(
+    engine=model_engine,
+    prompt=prompt,
+    max_tokens=1024,
+    n=1,
+    stop=None,
+    temperature=0.5,
+)
+
+response = completion.choices[0].text
+print(response)
+```
+
+![](images/image-1422685760.png){width="682"}
+
+### Python for Automation
+
+<https://www.youtube.com/watch?v=w-X_EQ2Xva4>
+
+![► Git Repo for this tutorial: https://gitlab.com/nanuchi/python-aut... ► OpenAI API: https://platform.openai.com/docs/intr... ► Requests Python library: https://requests.readthedocs.io/en/la... ► BeautifulSoup library: https://www.crummy.com/software/Beaut...](images/image-1143191120.png)
+
+![](images/image-1801510646.png)
+
+```{python}
+import requests  #to make requests to any API
+import argparse  #built in module to pass arguments
+import os
+
+parser = argparse.ArgumentParser()
+#Argument for the prompt
+parser.add_argument("prompt", help="The prompt to send to the OpenAI API")
+#Argument for the file name to write the response back
+parser.add_argument("file_name", help="Name of the file to save Python script")
+args = parser.parse_args()
+#---> see below {args.prompt} in the request_data variable
+
+
+api_endpoint = "https://api.openai.com/v1/completions"   #<--- ENDPOINt
+api_key = os.getenv("OPENAI_API_KEY")                    #<--- KEY
+
+#Variable for headers
+request_headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + api_key  # + String concatenation
+}
+
+#Variable for data
+request_data = {
+    "model": "text-davinci-003",
+    "prompt": f"Write python script to {args.prompt}. Provide only code, no text",
+    "max_tokens": 500,  #<--- Sets extensiveness of response, low figure = short
+    "temperature": 0.5  #<--- Sets creativity level 1 very creative 0 predicable
+}
+
+response = requests.post(api_endpoint, headers=request_headers, json=request_data)
+#we will receive a jason response the response.json() method alows us to access the message
+
+#The below is some error handling and then to write the response to a file:
+if response.status_code == 200:
+    response_text = response.json()["choices"][0]["text"]
+    with open(args.file_name, "w") as file:  #"w" = write mode, "a" would append
+        file.write(response_text)
+else:
+    print(f"Request failed with status code: {str(response.status_code)}")
+
+```
+
+In order not to write the variable in the code it can be exported as environment variable, see below before executing the script **in the same terminal session**:
+
+![](images/image-1757427064.png)
+
+response_text = response.json()\["choices"\]\[0\]\["text"\] to extract from below array the text:
+
+![](images/image-140503113.png)
+
+![The openai package is specific whereas request is generic and for many use cases.](images/image-788505603.png)
+
+![](images/image-1547185458.png)
+
+![](images/image-299100870.png)
+
+![![](images/image-2061793703.png)](images/image-1061499620.png)
+
+![](images/image-2132509556.png)
+
+Machine Learing Models:
+
+![](images/image-96893696.png)
+
+![](images/image-1548398929.png){width="657"}
+
+**Use the code and apply it to the following use case:**
+
+![](images/image-646749835.png)
+
+Ask chatGPT to write code for this use case:
+
+![](images/image-1192328210.png)
+
+![](images/image-647818893.png)
+
+```{python}
+import requests
+from bs4 import BeautifulSoup
+import googletrans
+
+# Get the page
+url = 'https://www.techworld-with-nana.com/post/a-guide-of-how-to-get-started-in-it-in-2023-top-it-career-paths'
+page = requests.get(url)
+
+# Parse the page
+soup = BeautifulSoup(page.content, 'html.parser')
+
+# Get all the header elements
+headers = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+
+# Translate each header to Spanish
+translator = googletrans.Translator()
+spanish_headers = []
+for header in headers:
+    translated_header = {
+        "text": translator.translate(header.text, dest='es').text,
+        "name": header.name
+    }
+
+    spanish_headers.append(translated_header)
+
+# Create an HTML file with the Spanish headers
+with open('spanish_headers.html', 'w') as f:
+    f.write('<html>\n')
+    for header in spanish_headers:
+        f.write(f'<{header["name"]}>{header["text"]}</{header["name"]}>\n')
+    f.write('</html>\n')
+
+```
+
+Use case to go through files in downloads folder, check for dates and if older than 30 days, delete them.
+
+![](images/image-1523279733.png)
+
+```{python}
+import os
+import shutil
+from datetime import datetime, timedelta
+
+# set the path of the folder to check
+folder_path = os.path.join(os.path.expanduser('~'), 'Downloads')
+
+# set the path of the folder to move files to
+to_delete_folder_path = os.path.join(os.path.expanduser('~'), 'to_delete')
+
+# create the folder if it doesn't exist
+if not os.path.exists(to_delete_folder_path):
+    os.makedirs(to_delete_folder_path)
+
+# get the list of files in the folder
+files = os.listdir(folder_path)
+
+# get the current date
+now = datetime.now()
+
+# loop through the files
+for file in files:
+    # get the file path
+    file_path = os.path.join(folder_path, file)
+
+    # get the file's modification date
+    modified_date = datetime.fromtimestamp(os.path.getmtime(file_path))
+
+    # calculate the time difference
+    time_difference = now - modified_date
+
+    # if the file is older than 30 days, move it
+    if time_difference > timedelta(days=30):
+        shutil.move(file_path, to_delete_folder_path)
+
+```
+
+## Statistics
+
+### Interquartile Range IQR
+
+PowerBI
+
+IQR1 = PERCENTILE.INC(\[DATA\], 0.25)
+
+IQR2 = PERCENTILE.INC(\[DATA\], 0.50)
+
+IQR3 = PERCENTILE.INC(\[DATA\], 0.75)
+
+Q1 LOWER OUTLIER GATE = IQR1 - 1.5 \* IQR1
+
+Q3 UPPER OUTLIER GATE = IQR3 + 1.5 \* IQR3
+
+## Docker
+
+This Docker command cheat sheet is for those who manage their Docker image and container. I intend not to mix this up with [Swarm](https://docs.docker.com/engine/swarm/), [docker-compose](https://docs.docker.com/compose/) and [docker-machine](https://docs.docker.com/machine/concepts/) so I will create a separate cheat sheet for my next topic.
+
+If you have not had experience on Docker containers before, please read my topic first about [Why you should learn Docker](https://www.yippeecode.com/topics/why-you-should-learn-docker/).
+
+### **Manage Docker Image**
+
+```{shell}
+docker image --help
+docker image ls -f dangling=true
+```
+
+The value `6f4b0659e2ea` is the Image ID, `dockerhubacct/publish` is a repository name, and `sometag` is the name of the tag.
+
+The `-f dangling=true` flag will filter the list of images by showing only those that has no relationship or use with other images.
+
+```{shell}
+docker tag \
+6f4b0659e2ea dockerhubacct/publish:sometag
+```
+
+### **Push and Pull Docker Image**
+
+```{shell}
+docker login -u dockerhubacct
+docker push dockerhubacct/publish:sometag
+docker pull dockerhubacct/publish:sometag
+```
+
+Before you can start pushing and pulling image in Docker hub you will need to login first using your account, and you can do that in the command line using `docker login` command.
+
+```{shell}
+docker image prune
+docker image prune -a
+```
+
+The `prune` command will remove the unused dangling images. And adding the `-a` flag will remove all unused images, not just dangling ones.
+
+### **Build an image with arguments**
+
+```{shell}
+docker build \
+--build-arg project_port=8001 \
+--build-arg project_root_dir=myproject \
+-t dockerhubacct/publish:sometag .
+```
+
+With the `--build-arg` you can pass build-time variables. The `-t` flag is the name and optionally a tag in the `name:tag` format.
+
+Another important part of this command is the dot ( . ) at the very end. That means the path of the Dockerfile is in the same folder location from where you are executing the command.
+
+### **Archive Docker image**
+
+```{shell}
+docker image save dockerhubacct/publish:sometag > myproject-docker-image.tar
+```
+
+### **Load image from .tar File**
+
+```{shell}
+docker load < myproject-docker-image.tar
+```
+
+### **Manage Docker Container**
+
+```{shell}
+docker container --help
+docker container ls -a
+docker container rm $(docker container ls -aq)
+docker container top mycontainer
+docker container rename mycontainer myoldcontainer
+```
+
+In these commands, the `-a` flag means show all containers and the `-q` will only display the numeric identification of the container.
+
+To remove all containers with `rm` command it is possible to use this in conjunction with the result of listing the container ID `$(docker container ls -aq)`.
+
+### **Inspecting a Docker Container**
+
+```{shell}
+docker container inspect -f "{{ .Config.Env }}" mycontainer
+```
+
+**docker** container inspect \\
+
+```{shell}
+-f '{{.Name}}: {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mycontainer
+```
+
+### **Copy and list files inside the container**
+
+```{shell}
+docker container cp foo.text mycontainer:/var/www
+docker container exec mycontainer ls /var/www
+```
+
+The foo.text file is in the host server, copying this inside the container `/var/www` folder.
+
+### **Setting environment variables and run a container**
+
+```{shell}
+docker run -e SETTINGS=development --name mycontainer dockerhubacct/publish:sometag
+```
+
+```{shell}
+docker run \
+--network=host --name mycontainer \
+dockerhubacct/publish:sometag
+```
+
+Run container using the Host network. The port mappings will be disregarded when the container is running using Host network.
+
+```{shell}
+sudo docker container create --name mycontainer -p 8001:8001 dockerhubacct/publish:sometag
+```
+
+Prepare the container for running. Similar to `docker run -d` except the container is never started
+
+```{shell}
+docker run --rm --name mycontainer --entrypoint "/bin/bash" dockerhubacct/publish:sometag somescript.sh
+```
+
+Override entry point specified in the Dockerfile. Run the container and execute `/bin/bash` command instead. Moreover, the `--rm` will remove the container when it exit.
+
+```{shell}
+docker exec $(docker container ls --format {{.Names}} | grep 'webapp') \
+bash -c "./script.sh" >> /var/log/webapp.log
+```
+
+Firstly, we are passing the result of the `$(docker container ls --format {{.Names}} | grep 'webapp')` to the `exec` command. And the result are the names of the containers by using the `--format {{.Names}}` flag.
+
+Secondly, inside the container run a bash script `script.sh`. That means all the returned containers with "webapp" in its name will run the script respectively.
+
+Lastly, the output of the `exec` command will be logged in the host server `/var/log/webapp.log`.
+
+This is useful if you have a maintenance script that you need to run within the container. For instance, you may setup a periodical task in the host server and use the `docker exec` command to run the script.
+
+```{shell}
+sudo docker exec -it mycontainer /bin/bash
+```
+
+Run a command in a running container. The `-i` flag will keep STDIN open even if not attached, and `-t` flag will allocate a pseudo-TTY. `/bin/bash` is the command that will be executed inside the container.
+
+```{shell}
+docker commit --change="ENV DEBUG=True PROJECT_PORT=8002" --change="EXPOSE 8002" mycontainer dockerhubacct/publish:sometagv2
+```
+
+Create a new image from a container's change.
+
+To summarize this Docker command cheat sheet, I have shown you the commands for managing Docker Image, Containers and how to execute commands inside the container.
+
+## Useful links
+
+| Topic                                                  | Description                                                                                                                                                                                              | Link                                    |
+|--------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------|
+| Using ggplot in Python: Visualizing Data With plotnine | In this tutorial, you'll learn how to use `ggplot` in Python to create data visualizations using a grammar of graphics.                                                                                  | <https://realpython.com/ggplot-python/> |
+| SQL Server Tips, Articles and Training                 | SQL Server resources to solve real world problems for DBAs, Developers and BI Pros - all for free. Check out tips, articles, scripts, videos, tutorials, live events and more all related to SQL Server. | <https://www.mssqltips.com/>            |
+| Freecode Camp                                          | Platform to learn coding (for free)                                                                                                                                                                      | <https://www.freecodecamp.org/learn>    |
+|                                                        |                                                                                                                                                                                                          |                                         |
+|                                                        |                                                                                                                                                                                                          |                                         |
+|                                                        |                                                                                                                                                                                                          |                                         |
+|                                                        |                                                                                                                                                                                                          |                                         |
+|                                                        |                                                                                                                                                                                                          |                                         |
+|                                                        |                                                                                                                                                                                                          |                                         |
+|                                                        |                                                                                                                                                                                                          |                                         |
+
+## Quarto
+
+The below content is taken from: <https://www.youtube.com/watch?v=mGNW8jl7RMc>
+
+![](images/New%20overview.PNG)
+
+![](images/Process.PNG)
+
+![](images/image-1780419393.png)
+
+![](images/Resources.PNG)
+
+And I have this next subsection.
+
++---------+--------+----------------------+
+| Fruit   | Price  | Advantages           |
++=========+========+======================+
+| Bananas | \$1.34 | -   built-in wrapper |
+|         |        | -   bright color     |
++---------+--------+----------------------+
+| Oranges | \$2.10 | -   cures scurvy     |
+|         |        | -   tasty            |
++---------+--------+----------------------+
+
+: Sample grid table.
+
+`{r} library(reticulate) library(plotly)  use_python('C:/Users/Alois/AppData/Local/Programs/Python/Python310/') py_run_string("print('Hello World')") py_run_string("x = 100") py$x  py_run_string("dict1 = {'A':1, 'B':2}") py$dict1   dict2 = py_dict(keys = c('A','B','C'), values = c(1,2,3))  dict2['A'] dict2$A}`
+
+`{python} import pandas as pd df = pd.read_csv('data.csv')  df.head(2)  print("Hello World")}`
+
+### For loops in Quarto
+
+Use display(Markdown("\## Header 2")) in the for loop to generate the titles
+
+```{---}
+title: "For Loops in Quarto"
+format: 
+    revealjs:
+      theme: default
+code-fold: true
+execute: 
+  echo: false
+---
+
+#| include: false
+
+from IPython.display import display, Markdown
+from sklearn import datasets
+import pandas as pd
+import plotly.express as px
+
+#| include: false
+# Get data
+iris = datasets.load_iris()
+df = pd.DataFrame(iris['data'], columns=iris['feature_names'])
+df['target'] = iris['target']
+
+#| output: asis
+
+for target in df['target'].unique():
+  display(Markdown("## Scatter plot per species"))
+  fig = px.scatter(df, x='petal length (cm)', y='sepal length (cm)')
+  fig.show()
+```
+
+### To look into
+
+-   pkgdown in R / Sphinx in Python for package documentation
+
+-   Testing:
+
+    -   testthat: [workshop: "Building a Package that Lasts"](https://speakerdeck.com/colinfay/building-a-package-that-lasts-erum-2018-workshop?slide=107).
+
+    -   pytest
+
+-   Visualise dependencies within and between Python files:
+
+    -   pydepgraph
+
+    -   snakefood
+
+    -   pyan
+
+    -   Graphviz to visualise DOT files generated by for example pydepgraph
+
+-   Shiny Moduls: *Modularizing Shiny app code* (<https://shiny.rstudio.com/articles/modules.html>)
+
+-   R Packages
+
+    -   [R packages](http://r-pkgs.had.co.nz/)
+
+    -   [Building a Package that Lasts](https://speakerdeck.com/colinfay/building-a-package-that-lasts-erum-2018-workshop)
+
+    -   [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Creating-R-packages)
+
+    -   [R Package Primer - a Minimal Tutorial](https://kbroman.org/pkg_primer/)
+
+### SSAS
+
+#### Rolling Partitions ideas
+
+```{shell}
+# Define your SSAS server and database information
+$serverName = "YourSSASServerName"
+$databaseName = "YourSSASDatabaseName"
+
+# SQL Server connection details
+$SqlConnectionString = "Server=YourSqlServer;Database=YourDatabase;Integrated Security=True;"
+$SqlQuery = "SELECT DISTINCT YearColumn, MonthColumn FROM YourTable ORDER BY YearColumn, MonthColumn;"
+
+# Connect to SQL Server
+$SqlConnection = New-Object System.Data.SqlClient.SqlConnection
+$SqlConnection.ConnectionString = $SqlConnectionString
+$SqlConnection.Open()
+
+# Execute SQL Query
+$SqlCmd = $SqlConnection.CreateCommand()
+$SqlCmd.CommandText = $SqlQuery
+$SqlReader = $SqlCmd.ExecuteReader()
+
+# Connect to the SSAS server
+$ssasServer = New-Object Microsoft.AnalysisServices.Server
+$ssasServer.Connect($serverName)
+
+# Iterate through SQL results and create partitions
+while ($SqlReader.Read()) {
+    $year = $SqlReader["YearColumn"]
+    $month = $SqlReader["MonthColumn"]
+
+    $partitionName = "{0:D4}{1:D2}" -f $year, $month
+
+    # Check if the partition already exists
+    if ($ssasServer.Databases[$databaseName].Cubes[0].MeasureGroups[0].Partitions | Where-Object { $_.Name -eq $partitionName } -eq $null) {
+        Write-Host "Creating new partition: $partitionName"
+        $partition = $ssasServer.Databases[$databaseName].Cubes[0].MeasureGroups[0].Partitions.Add($partitionName)
+
+        # Customize the script to define the partition query based on your requirements
+        $partition.QueryDefinition = "SELECT * FROM YourFactTable WHERE YearColumn = $year AND MonthColumn = $month"
+    } else {
+        Write-Host "Partition already exists: $partitionName"
+    }
+}
+
+# Process all partitions
+foreach ($partition in $ssasServer.Databases[$databaseName].Cubes[0].MeasureGroups[0].Partitions) {
+    $partition.Process("ProcessFull")
+}
+
+# Disconnect from SQL Server
+$SqlConnection.Close()
+
+# Disconnect from the SSAS server
+$ssasServer.Disconnect()
+```
+
+## HTML
+
+The **HyperText Markup Language** or **HTML** is the standard [markup language](https://en.wikipedia.org/wiki/Markup_language "Markup language") for documents designed to be displayed in a [web browser](https://en.wikipedia.org/wiki/Web_browser "Web browser"). It defines the content and structure of [web content](https://en.wikipedia.org/wiki/Web_content "Web content"). It is often assisted by technologies such as [Cascading Style Sheets](https://en.wikipedia.org/wiki/CSS "CSS") (CSS) and [scripting languages](https://en.wikipedia.org/wiki/Scripting_language "Scripting language") such as [JavaScript](https://en.wikipedia.org/wiki/JavaScript "JavaScript").
+
+This is a relatively short and concise overview of HTML: <https://en.wikipedia.org/wiki/HTML#Markup>
+
+## DuckDB
+
+[Documentation: https://duckdb.org/docs/](https://duckdb.org/docs/)
+
+### **Import from Pandas**
+
+[`CREATE TABLE ... AS`](https://duckdb.org/docs/sql/statements/create_table#create-table--as-ctas) and [`INSERT INTO`](https://duckdb.org/docs/sql/statements/insert) can be used to create a table from any query. We can then create tables or insert into existing tables by referring to referring to the [Pandas](https://pandas.pydata.org/) DataFrame in the query. There is no need to register the DataFrames manually – DuckDB can find them in the Python process by name thanks to [replacement scans](https://duckdb.org/faq#glossary-of-terms).
+
+``` python
+import duckdb
+import pandas
+
+# Create a Pandas dataframe
+my_df = pandas.DataFrame.from_dict({'a': [42]})
+
+# create the table "my_table" from the DataFrame "my_df"
+# Note: duckdb.sql connects to the default in-memory database connection
+duckdb.sql("CREATE TABLE my_table AS SELECT * FROM my_df")
+
+# insert into the table "my_table" from the DataFrame "my_df"
+duckdb.sql("INSERT INTO my_table SELECT * FROM my_df")
+```
+
+If the order of columns is different or not all columns are present in the DataFrame, use [`INSERT INTO ... BY NAME`](https://duckdb.org/docs/sql/statements/insert#insert-into--by-name):
+
+```         
+duckdb.sql("INSERT INTO my_table BY NAME SELECT * FROM my_df") 
+```
+
+## [**See Also**](https://duckdb.org/docs/guides/python/import_pandas#see-also)
+
+# React
+
+Check the version in cmd: npm -v
+
+In VS Code install extentions Prettier to format the code
+
+In VS File, Preferences, sear cor format on save, tick: Editor: Format On Save
+
+Then create a new app by following the below steps and using vite –\> npm create vite:
+
+``` shell
+F:\IT\react>npm create vite@latest
+Need to install the following packages:
+create-vite@5.2.3
+Ok to proceed? (y) y
+
+
+> npx
+> create-vite
+
+√ Project name: ... new_app
+√ Select a framework: » React
+√ Select a variant: » TypeScript
+
+Scaffolding project in F:\IT\react\new_app...
+
+Done. Now run:
+
+  cd new_app
+  npm install
+  npm run dev
+
+npm notice
+npm notice New minor version of npm available! 10.7.0 -> 10.8.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v10.8.1
+npm notice To update run: npm install -g npm@10.8.1
+npm notice
+
+F:\IT\react>cd new_app
+
+F:\IT\react\new_app> npm install
+```
+
+Once the app has been created and npm install has been executed, open VS code and the open the respective directory of the app.
+
+To launch a web server go to the terminal window in VS Code and then run: npm run dev
+
+``` shell
+  VITE v5.2.12  ready in 281 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+```

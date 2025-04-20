@@ -1,0 +1,34 @@
+project:
+  type: website
+  output-dir: docs
+
+  render:
+    - "*.qmd"
+    - "!Snowflake.*"
+    - "!VBA List DB Objects.qmd"
+    - "!Notes.qmd"
+    - "!ignored-dir/"
+
+website:
+  title: "My Knowledge Base"
+  site-url: "https://your-site-url.com"
+  navbar:
+    left:
+      - text: Home
+        href: index.qmd
+      - text: Topics
+        href: topics/index.qmd
+      - text: Resources
+        href: resources/references.qmd
+    right:
+      - about.qmd
+  sidebar:
+    contents:
+      - section: "Topics"
+        contents: topics/**
+      - section: "Resources"
+        contents: resources/**
+format:
+  html:
+    theme: cosmo
+    toc: true

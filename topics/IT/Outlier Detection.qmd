@@ -1,0 +1,390 @@
+---
+title: "Outlier Detection"
+execute:
+  eval: true
+format: html
+editor: 
+  markdown: 
+    wrap: sentence
+---
+
+### Techniques
+
+| Method | Description |
+|------------------------------------|------------------------------------|
+| Z-Score Method | Identifies outliers based on standard deviations from the mean |
+| IQR (Interquartile Range) | Uses quartiles to determine what's outside the expected range |
+| Isolation Forest | Machine learning algorithm that isolates observations by randomly selecting features |
+| Local Outlier Factor (LOF) | Measures local deviation of density with respect to neighbors |
+| Elliptic Envelope | Assumes Gaussian distribution and finds points that deviate |
+| DBSCAN Clustering | Density-based clustering that can identify points in low-density regions |
+| Modified Z-Score | More robust version of Z-score that uses median instead of mean |
+| Percentile-based | Uses percentile thresholds to identify extreme values |
+| Mahalanobis Distance | Measures distance accounting for correlations in multivariate data |
+
+### Examples
+
+Imports and seeding data
+
+```{python}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.covariance import EllipticEnvelope
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+
+# Generate sample data with outliers
+np.random.seed(42)
+# Generate normal data
+X_normal = np.random.normal(0, 1, (100, 2))
+# Add some outliers
+X_outliers = np.random.uniform(low=-5, high=5, size=(10, 2))
+X = np.vstack([X_normal, X_outliers])
+
+# Create a dataframe for easier manipulation
+df = pd.DataFrame(X, columns=['feature1', 'feature2'])
+
+# Visualization function
+def plot_outliers(df, outliers_mask, title):
+    plt.figure(figsize=(5, 3))
+    plt.scatter(df['feature1'], df['feature2'], c=['blue' if not x else 'red' for x in outliers_mask], alpha=0.7)
+    plt.title(title)
+    plt.xlabel('Feature 1')
+    plt.ylabel('Feature 2')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(['Normal', 'Outlier'])
+    plt.show()
+```
+
+#### Statistical (Z-Score)
+
+```{python}
+
+def zscore_outliers(df, threshold=3):
+    """Detect outliers using Z-score method"""
+    z_scores = stats.zscore(df)
+    outliers_mask = (np.abs(z_scores) > threshold).any(axis=1)
+    print(f"Z-Score method detected {sum(outliers_mask)} outliers")
+    return outliers_mask
+```
+
+#### IQR (Interquartile Range)
+
+```{python}
+def iqr_outliers(df, factor=1.5):
+    """Detect outliers using IQR method"""
+    Q1 = df.quantile(0.25)
+    Q3 = df.quantile(0.75)
+    IQR = Q3 - Q1
+    outliers_mask = ((df < (Q1 - factor * IQR)) | (df > (Q3 + factor * IQR))).any(axis=1)
+    print(f"IQR method detected {sum(outliers_mask)} outliers")
+    return outliers_mask
+```
+
+#### Isolation Forest
+
+```{python}
+def isolation_forest_outliers(df, contamination=0.1):
+    """Detect outliers using Isolation Forest"""
+    model = IsolationForest(contamination=contamination, random_state=42)
+    preds = model.fit_predict(df.values)
+    outliers_mask = preds == -1
+    print(f"Isolation Forest detected {sum(outliers_mask)} outliers")
+    return outliers_mask
+```
+
+#### Local Outlier Factor (LOF)
+
+```{python}
+def lof_outliers(df, n_neighbors=20, contamination=0.1):
+    """Detect outliers using Local Outlier Factor"""
+    model = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=contamination)
+    preds = model.fit_predict(df.values)
+    outliers_mask = preds == -1
+    print(f"LOF detected {sum(outliers_mask)} outliers")
+    return outliers_mask
+```
+
+#### Elliptic Envelope (assumes Gaussian distribution)
+
+```{python}
+def elliptic_envelope_outliers(df, contamination=0.1):
+    """Detect outliers using Elliptic Envelope"""
+    model = EllipticEnvelope(contamination=contamination, random_state=42)
+    preds = model.fit_predict(df)
+    outliers_mask = preds == -1
+    print(f"Elliptic Envelope detected {sum(outliers_mask)} outliers")
+    return outliers_mask
+```
+
+#### DBSCAN clustering
+
+```{python}
+def dbscan_outliers(df, eps=0.5, min_samples=5):
+    """Detect outliers using DBSCAN"""
+    # Scale the features
+    scaler = StandardScaler()
+    scaled_data = scaler.fit_transform(df)
+    
+    # Fit DBSCAN
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+    clusters = dbscan.fit_predict(scaled_data)
+    
+    # Mark outliers (cluster label -1)
+    outliers_mask = clusters == -1
+    print(f"DBSCAN detected {sum(outliers_mask)} outliers")
+    return outliers_mask
+```
+
+**Modified Z-Score (more robust to outliers)**
+
+```{python}
+def modified_zscore_outliers(df, threshold=3.5):
+    """Detect outliers using Modified Z-score"""
+    median = df.median()
+    mad = np.median(np.abs(df - median), axis=0)
+    modified_z_scores = 0.6745 * np.abs(df - median) / mad
+    outliers_mask = (modified_z_scores > threshold).any(axis=1)
+    print(f"Modified Z-Score method detected {sum(outliers_mask)} outliers")
+    return outliers_mask
+```
+
+**Percentile-based**
+
+```{python}
+def percentile_outliers(df, lower_percentile=0.01, upper_percentile=0.99):
+    """Detect outliers using percentile method"""
+    lower_bound = df.quantile(lower_percentile)
+    upper_bound = df.quantile(upper_percentile)
+    outliers_mask = ((df < lower_bound) | (df > upper_bound)).any(axis=1)
+    print(f"Percentile method detected {sum(outliers_mask)} outliers")
+    return outliers_mask
+```
+
+#### Mahalanobis Distance (for multivariate data)
+
+```{python}
+def mahalanobis_outliers(df, threshold=3.0):
+    """Detect outliers using Mahalanobis distance"""
+    # Calculate mean and covariance
+    mean = np.mean(df, axis=0)
+    cov = np.cov(df.T)
+    
+    # Calculate Mahalanobis distance for each point
+    inv_cov = np.linalg.inv(cov)
+    mahal_dist = []
+    
+    for i in range(df.shape[0]):
+        x = df.iloc[i].values
+        mahal_dist.append(np.sqrt(np.dot(np.dot((x - mean), inv_cov), (x - mean).T)))
+    
+    mahal_dist = np.array(mahal_dist)
+    outliers_mask = mahal_dist > threshold
+    print(f"Mahalanobis method detected {sum(outliers_mask)} outliers")
+    return outliers_mask
+```
+
+#### Run calculations
+
+```{python}
+# Demonstrate outlier detection methods on sample data
+print("Sample Data Info:")
+print(f"Total points: {len(df)}")
+print(f"Expected outliers: {len(X_outliers)}")
+print("\nApplying different outlier detection methods:")
+
+# Apply all methods and visualize results
+outliers_zscore = zscore_outliers(df)
+plot_outliers(df, outliers_zscore, 'Z-Score Method')
+
+outliers_iqr = iqr_outliers(df)
+plot_outliers(df, outliers_iqr, 'IQR Method')
+
+outliers_iforest = isolation_forest_outliers(df)
+plot_outliers(df, outliers_iforest, 'Isolation Forest Method')
+
+outliers_lof = lof_outliers(df)
+plot_outliers(df, outliers_lof, 'Local Outlier Factor Method')
+
+outliers_elliptic = elliptic_envelope_outliers(df)
+plot_outliers(df, outliers_elliptic, 'Elliptic Envelope Method')
+
+outliers_dbscan = dbscan_outliers(df)
+plot_outliers(df, outliers_dbscan, 'DBSCAN Method')
+
+outliers_mod_zscore = modified_zscore_outliers(df)
+plot_outliers(df, outliers_mod_zscore, 'Modified Z-Score Method')
+
+outliers_percentile = percentile_outliers(df)
+plot_outliers(df, outliers_percentile, 'Percentile Method')
+
+outliers_mahalanobis = mahalanobis_outliers(df)
+plot_outliers(df, outliers_mahalanobis, 'Mahalanobis Distance Method')
+
+# Compare methods with a summary
+methods = [
+    'Z-Score', 'IQR', 'Isolation Forest', 'LOF', 
+    'Elliptic Envelope', 'DBSCAN', 'Modified Z-Score',
+    'Percentile', 'Mahalanobis'
+]
+
+outlier_counts = [
+    sum(outliers_zscore), sum(outliers_iqr), sum(outliers_iforest),
+    sum(outliers_lof), sum(outliers_elliptic), sum(outliers_dbscan),
+    sum(outliers_mod_zscore), sum(outliers_percentile), sum(outliers_mahalanobis)
+]
+
+# Create summary dataframe
+summary = pd.DataFrame({
+    'Method': methods,
+    'Outliers Detected': outlier_counts
+})
+
+print("\n------- Summary of Results -------")
+print(summary)
+
+# Plot summary
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Method', y='Outliers Detected', data=summary)
+plt.title('Comparison of Outlier Detection Methods')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Real-world example function
+def detect_outliers_in_real_data(df, columns_to_check=None, method='zscore'):
+    """
+    Detect outliers in real-world data using specified method
+    
+    Parameters:
+    -----------
+    df : pandas DataFrame
+        Input data
+    columns_to_check : list or None
+        Columns to check for outliers (numeric only)
+    method : str
+        Outlier detection method ('zscore', 'iqr', 'iforest', 'lof', 'elliptic', 
+                                  'dbscan', 'mod_zscore', 'percentile', 'mahalanobis')
+    
+    Returns:
+    --------
+    outlier_indices : numpy array
+        Indices of detected outliers
+    """
+    # Select only numeric columns if not specified
+    if columns_to_check is None:
+        columns_to_check = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    # Extract numeric data for outlier detection
+    data = df[columns_to_check].copy()
+    
+    # Handle missing values
+    data = data.fillna(data.median())
+    
+    # Apply selected method
+    if method == 'zscore':
+        outliers_mask = zscore_outliers(data)
+    elif method == 'iqr':
+        outliers_mask = iqr_outliers(data)
+    elif method == 'iforest':
+        outliers_mask = isolation_forest_outliers(data)
+    elif method == 'lof':
+        outliers_mask = lof_outliers(data)
+    elif method == 'elliptic':
+        outliers_mask = elliptic_envelope_outliers(data)
+    elif method == 'dbscan':
+        outliers_mask = dbscan_outliers(data)
+    elif method == 'mod_zscore':
+        outliers_mask = modified_zscore_outliers(data)
+    elif method == 'percentile':
+        outliers_mask = percentile_outliers(data)
+    elif method == 'mahalanobis':
+        outliers_mask = mahalanobis_outliers(data)
+    else:
+        raise ValueError(f"Unknown method: {method}")
+    
+    return np.where(outliers_mask)[0]
+```
+
+#### Example usage with real dataset
+
+```{python}
+# Example usage with real dataset
+from sklearn.datasets import fetch_california_housing
+
+def detect_outliers_in_real_data(df, columns_to_check=None, method='zscore'):
+    """
+    Detect outliers in real-world data using specified method
+    
+    Parameters:
+    -----------
+    df : pandas DataFrame
+        Input data
+    columns_to_check : list or None
+        Columns to check for outliers (numeric only)
+    method : str
+        Outlier detection method ('zscore', 'iqr', 'iforest', 'lof', 'elliptic', 
+                                  'dbscan', 'mod_zscore', 'percentile', 'mahalanobis')
+    
+    Returns:
+    --------
+    outlier_indices : numpy array
+        Indices of detected outliers
+    """
+    # Select only numeric columns if not specified
+    if columns_to_check is None:
+        columns_to_check = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    # Extract numeric data for outlier detection
+    data = df[columns_to_check].copy()
+    
+    # Handle missing values
+    data = data.fillna(data.median())
+    
+    # Apply selected method
+    if method == 'zscore':
+        outliers_mask = zscore_outliers(data)
+    elif method == 'iqr':
+        outliers_mask = iqr_outliers(data)
+    elif method == 'iforest':
+        outliers_mask = isolation_forest_outliers(data)
+    elif method == 'lof':
+        outliers_mask = lof_outliers(data)
+    elif method == 'elliptic':
+        outliers_mask = elliptic_envelope_outliers(data)
+    elif method == 'dbscan':
+        outliers_mask = dbscan_outliers(data)
+    elif method == 'mod_zscore':
+        outliers_mask = modified_zscore_outliers(data)
+    elif method == 'percentile':
+        outliers_mask = percentile_outliers(data)
+    elif method == 'mahalanobis':
+        outliers_mask = mahalanobis_outliers(data)
+    else:
+        raise ValueError(f"Unknown method: {method}")
+    
+    return np.where(outliers_mask)[0]
+
+
+# Load the California Housing dataset
+california = fetch_california_housing()
+california_df = pd.DataFrame(california.data, columns=california.feature_names)
+
+# Detect outliers using different methods
+outlier_indices_zscore = detect_outliers_in_real_data(california_df, method='zscore')
+outlier_indices_iforest = detect_outliers_in_real_data(california_df, method='iforest')
+
+# Compare results
+print(f"Z-Score detected {len(outlier_indices_zscore)} outliers")
+print(f"Isolation Forest detected {len(outlier_indices_iforest)} outliers")
+
+# Examine outlier data
+print("\nOutliers detected by Z-Score:")
+print(california_df.iloc[outlier_indices_zscore].describe())
+
+```

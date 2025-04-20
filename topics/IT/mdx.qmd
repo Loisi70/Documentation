@@ -1,0 +1,267 @@
+---
+title: "mdx notes"
+execute:
+  eval: false
+format: html
+editor: visual
+warnings: false
+---
+
+## Introduction
+
+Notes taken from <https://www.youtube.com/watch?v=FqlDM_HzkO4>
+
+![](images/mdx/Dimensions.PNG)
+
+![](images/mdx/tuples.PNG)
+
+![](images/mdx/Sets.PNG)
+
+## Running Code
+
+In order to return the members of a dimension . MEMBERS or .CHILDREN can be used. They both will return the same results. Without .MEMBERS or .CHILDREN the default ALL will be returned
+
+```{sql}
+SELECT
+  [Measures].[Internet Sales Amount] ON COLUMNS, --0
+  [Product].[Category].MEMBERS ON ROWS --1
+  --[Product].[Category].CHILDREN ON ROWS --1
+FROM
+  [Adventure Works]
+  
+```
+
+### NON EMPTY
+
+Keyword will suppress empty rows:
+
+```{sql}
+SELECT
+  [Measures].[Internet Sales Amount] ON COLUMNS, --0
+  
+  NON EMPTY
+  
+  (
+    [Product].[Category].MEMBERS,
+    [Product].[Subcategory].MEMBERS 
+  )ON ROWS --1
+FROM
+  [Adventure Works]
+```
+
+### ORDER
+
+Options are DESC, ASC and BDESC, BASC where ase DESC, ASC will order within the hierarchy.
+
+In contrast, BDESC, BASC will break the hierarchie
+
+```{sql}
+SELECT
+  [Measures].[Internet Sales Amount] ON COLUMNS, --0
+  
+  NON EMPTY
+  ORDER(
+      (
+        [Product].[Category].MEMBERS,
+        [Product].[Subcategory].MEMBERS 
+      ),
+      [Measures].[Internet Sales Amount],
+      DESC) ON ROWS --1
+FROM
+  [Adventure Works]
+```
+
+**WHERE**
+
+```{sql}
+SELECT
+  [Measures].[Internet Sales Amount] ON COLUMNS, --0
+  
+  NON EMPTY
+  ORDER(
+      (
+        [Product].[Category].MEMBERS,
+        [Product].[Subcategory].MEMBERS 
+      ),
+      [Measures].[Internet Sales Amount],
+      DESC) ON ROWS --1
+FROM
+  [Adventure Works]
+WHERE
+  [Product].[Color].&[Blue] -- this is acting as a slicer "blue will however not be                             -- visible in the tuple"
+```
+
+To see blue in the result set the slicer has to be part of the result set as a filter:
+
+```{sql}
+SELECT
+  [Measures].[Internet Sales Amount] ON COLUMNS, --0
+  
+  NON EMPTY
+  ORDER(
+      (
+        [Product].[Category].MEMBERS,
+        [Product].[Subcategory].MEMBERS, 
+        [Product].[Color].&[Blue]  --this is acting as a filter "blue" is now                                         --visible in the tuple"
+      ),
+      [Measures].[Internet Sales Amount],
+      DESC) ON ROWS --1
+FROM
+  [Adventure Works]
+
+```
+
+To slice on two items
+
+```{sql}
+SELECT
+  [Measures].[Internet Sales Amount] ON COLUMNS, --0
+  
+  NON EMPTY
+  ORDER(
+      (
+        [Product].[Category].MEMBERS,
+        [Product].[Subcategory].MEMBERS 
+      ),
+      [Measures].[Internet Sales Amount],
+      DESC) ON ROWS --1
+FROM
+  [Adventure Works]
+WHERE -- we need a set rather than a tuple hence {}
+  {
+    ([Product].[Color].&[Blue],
+     [Product].[Color].&[Black])
+  }
+
+/* this will fail as we have twice the same hierarchie in the same TUPLE  
+WHERE
+  ([Product].[Color].&[Blue],
+   [Product].[Color].&[Black])
+*/
+```
+
+Adding columns
+
+```{sql}
+SELECT
+  NON EMPTY --<---
+    ([Date].[Calendar Year].MEMBERS,)
+     [Measures].[Internet Sales Amount]) ON COLUMNS, --0
+  
+  NON EMPTY
+  ORDER(
+      (
+        [Product].[Category].MEMBERS,
+        [Product].[Subcategory].MEMBERS 
+      ),
+      [Measures].[Internet Sales Amount],
+      DESC) ON ROWS --1
+FROM
+  [Adventure Works]
+WHERE 
+  {
+    ([Product].[Color].&[Blue],
+     [Product].[Color].&[Black])
+  }
+```
+
+### User defined hierarchies vs attribute hierarchies
+
+![The pyramid indicates user hierarchies, the rectangles indicate attribute hierarchies](images/mdx/Natural_vs_User_Hierarchies.PNG)
+
+Attribute hierarchies have **one** level whereas user hierarchies can have **multiple** levels.
+
+```{sql}
+SELECT
+  [Measures].[Internet Sales Amount] ON COLUMNS, -- 0
+  [Product].[Product Categories].MEMBERS ON ROWS -- 1
+FROM
+  [Adventure Works]
+```
+
+".MEMBERS" on a user defined hierarchie will return **all levels.**
+
+To display the respective level, .CURRENTMEMBER.LEVEL.NAME can be used:
+
+```{sql}
+WITH MEMBER [Measures].[Level Name] AS --<---
+  [Product].[Product Categories].CURRENTMEMBER.LEVEL.NAME --<---
+  
+SELECT
+  [Measures].[Internet Sales Amount] ON COLUMNS, -- 0
+  [Product].[Product Categories].MEMBERS ON ROWS -- 1
+FROM
+  [Adventure Works]
+```
+
+![](images/mdx/User_Hierarchies.PNG)
+
+In order to see the categories only ".CHILDREN" can be used instead of ".MEMBERS":
+
+```{sql}
+WITH MEMBER [Measures].[Level Name] AS 
+  [Product].[Product Categories].CURRENTMEMBER.LEVEL.NAME
+  
+SELECT
+  [Measures].[Internet Sales Amount] ON COLUMNS, 
+  [Product].[Product Categories].CHILDREN ON ROWS --<---
+FROM
+  [Adventure Works]
+```
+
+![](images/mdx/User_Hierarchies_Children.PNG)
+
+### Create new measures
+
+```{sql}
+WITH MEMBER [Measures].[Profit] AS                                          --<---
+  [Measures].[Internet Sales Amount] -                                      --<---
+  [Measures].[Internet Total Product Cost], FORMAT_STRING = "CURRENCY"      --<---
+  
+  MEMBER [Measures].[Profit Margin] AS --<---
+  [Measures].[Profit] /                                                     --<---
+  [Measures].[Internet Sales Amount], FORMAT_STRING = "PERCENT"             --<---
+  
+SELECT
+  {
+    [Measures].[Internet Sales Amount],
+    [Measures].[Internet Total Product Cost],
+    [Measures].[Profit],                                                    --<---
+    [Measures].[Profit Margin]} ON COLUMNS,                                 --<---
+    
+  [Product].[Product Categories].CHILDREN ON ROWS 
+
+FROM
+  [Adventure Works]
+```
+
+### Time intelligence
+
+```{sql}
+WITH MEMBER [Measures].[YTD Demo] AS 
+      SUM(
+        YTD([DATE].[Calendar].CURRENTMEMBER),
+        [Measures].[Internet Sales Amount])
+    
+     MEMBER [Measures].[MTD Demo] AS 
+      SUM(
+        MTD([DATE].[Calendar].CURRENTMEMBER),
+        [Measures].[Internet Sales Amount])
+     
+     MEMBER [Measures].[Previous Period] AS 
+       SUM(
+        [Date].[Calendar].CURRENTMEMBER.PREVMEMBER,
+        [Measures].[Internet Sales Amount])                                     
+
+SELECT
+  {
+    [Measures].[Internet Sales Amount],
+    [Measures].[YTD Demo],
+    [Measures].[MTD Demo]
+  } ON COLUMS,
+  
+  [Date].[Calendar].MEMBERS ON ROWS 
+
+FROM
+  [Adventure Works]
+```

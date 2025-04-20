@@ -1,0 +1,185 @@
+---
+title: "VBA"
+format: html
+editor: visual
+execute:
+  eval: false
+---
+
+## VBA
+
+You can modify the VBA function to create a query that lists all objects in the database. Here's how you can do it:
+
+```{vba}
+Function CreateObjectsQuery()
+    Dim db As DAO.Database
+    Dim obj As AccessObject
+    Dim strSql As String
+
+    Set db = CurrentDb
+
+    strSql = "SELECT 'Table' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=1 AND Left([Name],4)<>'MSys' " & _
+             "UNION ALL " & _
+             "SELECT 'Query' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=5 " & _
+             "UNION ALL " & _
+             "SELECT 'Form' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=2 " & _
+             "UNION ALL " & _
+             "SELECT 'Report' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=3 " & _
+             "UNION ALL " & _
+             "SELECT 'Macro' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=4 " & _
+             "UNION ALL " & _
+             "SELECT 'Module' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=5"
+
+    ' Create a new query
+    db.CreateQueryDef "qryAllObjects", strSql
+
+    Set db = Nothing
+End Function
+
+```
+
+```{vba}
+Function CreateObjectsTable()
+    Dim db As DAO.Database
+    Dim tdf As DAO.TableDef
+    Dim fld As DAO.Field
+    
+    Set db = CurrentDb
+    
+    ' Delete the table if it already exists
+    On Error Resume Next
+    db.TableDefs.Delete "TblObjectNames"
+    On Error GoTo 0
+    
+    ' Create the table
+    Set tdf = db.CreateTableDef("TblObjectNames")
+    Set fld = tdf.CreateField("ObjectName", dbText, 255)
+    tdf.Fields.Append fld
+    db.TableDefs.Append tdf
+    
+    ' Populate the table with object names
+    db.Execute "INSERT INTO TblObjectNames (ObjectName) " & _
+               "SELECT 'Table' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=1 AND Left([Name],4)<>'MSys' " & _
+               "UNION ALL " & _
+               "SELECT 'Query' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=5 " & _
+               "UNION ALL " & _
+               "SELECT 'Form' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=2 " & _
+               "UNION ALL " & _
+               "SELECT 'Report' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=3 " & _
+               "UNION ALL " & _
+               "SELECT 'Macro' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=4 " & _
+               "UNION ALL " & _
+               "SELECT 'Module' AS ObjectType, Name AS ObjectName FROM MSysObjects WHERE Type=5"
+    
+    Set db = Nothing
+End Function
+
+Function PopulateDependenciesTable()
+    Dim db As DAO.Database
+    Dim rs As DAO.Recordset
+    Dim searchName As String
+    Dim result As String
+    
+    Set db = CurrentDb
+    
+    ' Delete the table if it already exists
+    On Error Resume Next
+    db.TableDefs.Delete "TblDependencies"
+    On Error GoTo 0
+    
+    ' Create the table for storing dependencies
+    db.Execute "CREATE TABLE TblDependencies (SearchName TEXT, ObjectName TEXT, FoundIn TEXT)"
+    
+    ' Open the recordset for the object names table
+    Set rs = db.OpenRecordset("TblObjectNames")
+    
+    ' Loop through each record in the table
+    Do While Not rs.EOF
+        searchName = rs("ObjectName")
+        result = FindObjectName(searchName)
+        
+        ' Insert the result into the dependencies table
+        db.Execute "INSERT INTO TblDependencies (SearchName, ObjectName, FoundIn) " & _
+                   "VALUES ('" & searchName & "', '" & Split(result, ":")(1) & "', '" & Split(result, ":")(0) & "')"
+        
+        rs.MoveNext
+    Loop
+    
+    rs.Close
+    Set rs = Nothing
+    Set db = Nothing
+End Function
+
+```
+
+Find Object Name
+
+```{vba}
+Function FindObjectName(searchName As String) As String
+    Dim db As DAO.Database
+    Dim qdf As DAO.QueryDef
+    Dim frm As Access.Form
+    Dim rpt As Access.Report
+    Dim mdl As Object
+    Dim searchFound As Boolean
+    
+    Set db = CurrentDb
+    
+    ' Check in query definitions
+    For Each qdf In db.QueryDefs
+        If InStr(1, qdf.SQL, searchName, vbTextCompare) > 0 Then
+            FindObjectName = "Found in query: " & qdf.Name
+            searchFound = True
+            Exit Function
+        End If
+    Next qdf
+    
+    ' Check in forms
+    For Each frm In CurrentProject.AllForms
+        If frm.HasModule Then
+            Set mdl = frm.Module
+            If InStr(1, mdl.Code, searchName, vbTextCompare) > 0 Then
+                FindObjectName = "Found in form: " & frm.Name
+                searchFound = True
+                Exit Function
+            End If
+        End If
+    Next frm
+    
+    ' Check in reports
+    For Each rpt In CurrentProject.AllReports
+        If rpt.HasModule Then
+            Set mdl = rpt.Module
+            If InStr(1, mdl.Code, searchName, vbTextCompare) > 0 Then
+                FindObjectName = "Found in report: " & rpt.Name
+                searchFound = True
+                Exit Function
+            End If
+        End If
+    Next rpt
+    
+    ' Check in macros (not possible to directly search in macro actions)
+    ' Check in module code
+    If ModuleExists(searchName) Then
+        FindObjectName = "Found in module: " & searchName
+        searchFound = True
+        Exit Function
+    End If
+    
+    ' If not found in any object
+    If Not searchFound Then
+        FindObjectName = "Not found"
+    End If
+    
+    Set db = Nothing
+End Function
+
+Function ModuleExists(moduleName As String) As Boolean
+    Dim mdl As Object
+    On Error Resume Next
+    Set mdl = VBE.ActiveVBProject.VBComponents(moduleName)
+    On Error GoTo 0
+    ModuleExists = Not mdl Is Nothing
+End Function
+
+```

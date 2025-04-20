@@ -1,0 +1,10 @@
+---
+title: "Welcome"
+format: html
+---
+
+# Welcome to My Knowledge Base
+
+This is a collection of useful resources, documentation, and guides.
+
+Use the sidebar or the navbar to navigate.
