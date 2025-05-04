@@ -20,6 +20,9 @@ website:
         href: topics/index.qmd
       - text: Resources
         href: resources/references.qmd
+      - text: Shinylive
+        href: shinylive/shinylive.qmd
+
     right:
       - about.qmd
   sidebar:

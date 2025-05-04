@@ -1,0 +1,94 @@
+---
+title: ""
+execute:
+  eval: false
+format:
+  html: 
+    code-fold: true
+---
+
+### AI prompt strategies
+
+**T**houghtfully **C**reate **R**eally **E**xcellent Inputs
+
++------------------+-------------------------------------------------------------------------------------+
+| 5 Step Framework | Description                                                                         |
++==================+=====================================================================================+
+| **T**ask         | What you want the AI to do:                                                         |
+|                  |                                                                                     |
+|                  | -   Persona: Act as a python instructor to..                                        |
+|                  |                                                                                     |
+|                  | -   Format: List or Organise into table                                             |
++------------------+-------------------------------------------------------------------------------------+
+| **C**ontext      | The more context you can give the more specific the answer will be                  |
++------------------+-------------------------------------------------------------------------------------+
+| **R**eferences   | Provide examples or links to web pages                                              |
++------------------+-------------------------------------------------------------------------------------+
+| **E**valuate     | After getting the output evaluate it and prompt again –\> iterate                   |
++------------------+-------------------------------------------------------------------------------------+
+| **I**terate      | Iterating the process until you are fine. Methods:                                  |
+|                  |                                                                                     |
+|                  | -   Revisit the prompting framework, provide more information, references, examples |
+|                  |                                                                                     |
+|                  | -   Separate prompt into smaller sentences                                          |
+|                  |                                                                                     |
+|                  | -   Trying different phrasing or switching to an analogous taks                     |
+|                  |                                                                                     |
+|                  | -   Introduce constraints                                                           |
++------------------+-------------------------------------------------------------------------------------+
+
+<https://www.youtube.com/watch?v=H3M95i4iS5c>
+
+#### Q & A prompting (Metha prompting)
+
+AI will prompt user to prompt correctly:
+
+```         
+@workspace propose a file/folder structure for this project. Ask me a series of yes/no questions that will help you to provide a better recommendation.
+```
+
+This will provide a numbered list of questions, answer them. 1..., 2..., 3...
+
+```         
+what are a few different ways that I can implement this db connection logig. give me the pros and cons of each strategy. #file:db.py
+```
+
+#### Stepwise Chain of Thought
+
+```         
+help me refactor the conde in #file:example.py. Go one step at a time. Do not move to the next step until i give the keyword "next". Begin.
+```
+
+#### Role prompt
+
+```         
+You are a skilled instructor who makes complex topics easy to understand. You come up with fun exercises so that your students can learn by doing. Your goal is to teach students to be proficient with regex. Move one step at a time and wait for the student to provide the correct answer before you move on to the next concept. Begin.
+```
+
+#### AI Agents
+
+[Agents - OpenAI API](https://platform.openai.com/docs/guides/agents)
+
+An AI agent is a system that perceives its environment, processes information, and autonomously takes actions to achieve specific goals.
+
+##### AI Agents Components
+
+Building agents involves assembling components across several domains - such as models, tools, knowledge and memory, audio and speech, guardrails, and orchestration - and OpenAI provides composable primitives for each.
+
+| **Domain** | **Description** | **OpenAI Primitives** |
+|:---|:---|:---|
+| [Models](https://platform.openai.com/docs/guides/agents#models) | Core intelligence capable of reasoning, making decisions, and processing different modalities. | [o1](https://platform.openai.com/docs/models/o1), [o3-mini](https://platform.openai.com/docs/models/o3-mini), [GPT-4.5](https://platform.openai.com/docs/models/gpt-4.5-preview), [GPT-4o](https://platform.openai.com/docs/models/gpt-4o), [GPT-4o-mini](https://platform.openai.com/docs/models/gpt-4o-mini) |
+| [Tools](https://platform.openai.com/docs/guides/agents#tools) | Interface to the world, interact with environment, function calling, built-in tools, etc. | [Function calling](https://platform.openai.com/docs/guides/function-calling), [Web search](https://platform.openai.com/docs/guides/tools-web-search), [File search](https://platform.openai.com/docs/guides/tools-file-search), [Computer use](https://platform.openai.com/docs/guides/tools-computer-use) |
+| [Knowledge and memory](https://platform.openai.com/docs/guides/agents#knowledge-memory) | Augment agents with external and persistent knowledge. | [Vector stores](https://platform.openai.com/docs/guides/retrieval#vector-stores), [File search](https://platform.openai.com/docs/guides/tools-file-search), [Embeddings](https://platform.openai.com/docs/guides/embeddings) |
+| [Audio and speech](https://platform.openai.com/docs/guides/agents#audio-and-speech) | Create agents that can understand audio and respond back in natural language. | [Audio generation](https://platform.openai.com/docs/guides/audio-generation), [realtime](https://platform.openai.com/docs/guides/realtime), [Audio agents](https://platform.openai.com/docs/guides/audio-agents) |
+| [Guardrails](https://platform.openai.com/docs/guides/agents#guardrails) | Prevent irrelevant, harmful, or undesirable behavior. | [Moderation](https://platform.openai.com/docs/guides/moderation), [Instruction hierarchy](https://openai.github.io/openai-agents-python/guardrails/) |
+| [Orchestration](https://platform.openai.com/docs/guides/agents#orchestration) | Develop, deploy, monitor, and improve agents. | [Agents SDK](https://openai.github.io/openai-agents-python/), [Tracing](https://platform.openai.com/traces), [Evaluations](https://platform.openai.com/docs/guides/evals), [Fine-tuning](https://platform.openai.com/docs/guides/fine-tuning) |
+| [Voice agents](https://platform.openai.com/docs/guides/voice-agents) | Create agents that can understand audio and respond back in natural language. | [Realtime API](https://platform.openai.com/docs/guides/realtime), [Voice support in the Agents SDK](https://openai.github.io/openai-agents-python/voice/quickstart/) |
+
+MCP is connecting Tools to LLMs
+
+[n8n](https://n8n.io/?ps_partner_key=ZTY2MWEwYzQ3NmQ1&ps_xid=Isvi4u2uNFQLIt&gsxid=Isvi4u2uNFQLIt&gspk=ZTY2MWEwYzQ3NmQ1&gad_source=1&gclid=EAIaIQobChMIkfWtwMD6jAMVMrRoCR1Xsxs3EAAYASAAEgK2zPD_BwE)
+
+**Flexible AI workflow automation for technical teams**
+
+Build with the precision of code or the speed of drag-n-drop. Host with on-prem control or in-the-cloud convenience. n8n gives you more freedom to implement multi-step AI agents and integrate apps than

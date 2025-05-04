@@ -1,0 +1,41 @@
+---
+title: Shinylive applications embedded in Quarto documents
+format: html
+filters:
+  - shinylive
+---
+
+### Embedded Shiny application
+
+To display a running Shiny app, use a code block with `{shinylive-python}`.
+
+```{shinylive-python}
+#| standalone: true
+
+from shiny import *
+import duckdb as db
+import pandas as pd
+
+app_ui = ui.page_fluid(
+    ui.input_slider("n", "N", 0, 100, 40),
+    ui.output_text_verbatim("txt"),
+    ui.input_file("f", "Pick a file, any file"),  
+    "Input file data:",
+    ui.output_text("txt2"),
+)
+
+def server(input, output, session):
+    @output
+    @render.text
+    def txt():
+        return f"The value of n*2 is {input.n() * 2}"
+      
+    @output
+    @render.text
+    def txt2():
+        return input.f()  
+
+app = App(app_ui, server)
+
+```
+
